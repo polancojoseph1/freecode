@@ -34,6 +34,28 @@ import path from "path"
 import { Global } from "./global"
 import { JsonMigration } from "./storage/json-migration"
 import { Database } from "./storage/db"
+import { KeysCommand } from "./cli/cmd/keys"
+import fs from "fs"
+
+// Auto-load ~/.config/freecode/keys.env into process.env at startup
+const keysEnvPath = path.join(
+  process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
+  "freecode",
+  "keys.env",
+)
+if (fs.existsSync(keysEnvPath)) {
+  const lines = fs.readFileSync(keysEnvPath, "utf8").split("\n")
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith("#")) continue
+    const eq = trimmed.indexOf("=")
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    const val = trimmed.slice(eq + 1).trim()
+    if (key && !(key in process.env)) process.env[key] = val
+  }
+}
+import os from "os"
 
 process.on("unhandledRejection", (e) => {
   Log.Default.error("rejection", {
@@ -123,6 +145,7 @@ let cli = yargs(hideBin(process.argv))
   })
   .usage("\n" + UI.logo())
   .completion("completion", "generate shell completion script")
+  .command(KeysCommand)
   .command(AcpCommand)
   .command(McpCommand)
   .command(TuiThreadCommand)
