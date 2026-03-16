@@ -5,26 +5,98 @@
  * Each key is a standard env var that the underlying AI SDK reads automatically.
  *
  * Usage:
- *   freecode keys list                       — show all configured providers
- *   freecode keys set <provider> <api-key>   — set a provider's API key
- *   freecode keys remove <provider>          — remove a provider's API key
+ *   freecode keys setup                      — interactive setup wizard (recommended)
+ *   freecode keys list                       — show all providers + status
+ *   freecode keys set <provider> <api-key>   — set a key directly
+ *   freecode keys remove <provider>          — remove a key
  */
 
 import type { CommandModule } from "yargs"
 import fs from "fs"
 import path from "path"
 import os from "os"
+import * as prompts from "@clack/prompts"
+import { UI } from "../ui"
 
-const PROVIDER_ENV_MAP: Record<string, { envKey: string; label: string; url: string }> = {
-  groq:        { envKey: "GROQ_API_KEY",        label: "Groq",         url: "console.groq.com" },
-  cerebras:    { envKey: "CEREBRAS_API_KEY",    label: "Cerebras",     url: "cloud.cerebras.ai" },
-  sambanova:   { envKey: "SAMBANOVA_API_KEY",   label: "SambaNova",    url: "cloud.sambanova.ai" },
-  gemini:      { envKey: "GEMINI_API_KEY",      label: "Google Gemini",url: "aistudio.google.com" },
-  openrouter:  { envKey: "OPENROUTER_API_KEY",  label: "OpenRouter",   url: "openrouter.ai" },
-  together:    { envKey: "TOGETHER_API_KEY",    label: "Together AI",  url: "api.together.ai" },
-  mistral:     { envKey: "MISTRAL_API_KEY",     label: "Mistral",      url: "console.mistral.ai" },
-  huggingface: { envKey: "HF_API_KEY",          label: "Hugging Face", url: "huggingface.co/settings/tokens" },
-  nvidia:      { envKey: "NVIDIA_API_KEY",      label: "NVIDIA NIM",   url: "build.nvidia.com" },
+type ProviderInfo = {
+  envKey: string
+  label: string
+  model: string
+  free: string
+  url: string
+  badge?: string
+  note?: string
+}
+
+const PROVIDERS: Record<string, ProviderInfo> = {
+  groq: {
+    envKey: "GROQ_API_KEY",
+    label: "Groq",
+    model: "llama-3.3-70b-versatile",
+    free: "14,400 req/day • fastest free option",
+    url: "https://console.groq.com",
+    badge: "FASTEST",
+  },
+  cerebras: {
+    envKey: "CEREBRAS_API_KEY",
+    label: "Cerebras",
+    model: "llama-3.3-70b",
+    free: "~2,000 tokens/sec • ultra-fast inference",
+    url: "https://cloud.cerebras.ai",
+    badge: "ULTRA FAST",
+  },
+  sambanova: {
+    envKey: "SAMBANOVA_API_KEY",
+    label: "SambaNova",
+    model: "Meta-Llama-3.3-70B-Instruct",
+    free: "400 req/day • high quality output",
+    url: "https://cloud.sambanova.ai",
+  },
+  gemini: {
+    envKey: "GEMINI_API_KEY",
+    label: "Google Gemini",
+    model: "gemini-2.0-flash",
+    free: "1,500 req/day • sign in with Google",
+    url: "https://aistudio.google.com/apikey",
+    badge: "EASIEST SIGNUP",
+    note: "Sign in with Google — no credit card needed",
+  },
+  openrouter: {
+    envKey: "OPENROUTER_API_KEY",
+    label: "OpenRouter",
+    model: "300+ free models",
+    free: "free tier • aggregates many providers",
+    url: "https://openrouter.ai/keys",
+    note: "Some models require no key at all",
+  },
+  together: {
+    envKey: "TOGETHER_API_KEY",
+    label: "Together AI",
+    model: "Llama-3.3-70B-Instruct-Turbo-Free",
+    free: "free credits on signup",
+    url: "https://api.together.ai",
+  },
+  mistral: {
+    envKey: "MISTRAL_API_KEY",
+    label: "Mistral",
+    model: "mistral-small-latest",
+    free: "free eval tier • EU-hosted",
+    url: "https://console.mistral.ai",
+  },
+  huggingface: {
+    envKey: "HF_API_KEY",
+    label: "Hugging Face",
+    model: "Llama-3.3-70B + hundreds more",
+    free: "free inference API • huge model selection",
+    url: "https://huggingface.co/settings/tokens",
+  },
+  nvidia: {
+    envKey: "NVIDIA_API_KEY",
+    label: "NVIDIA NIM",
+    model: "llama-3.3-70b-instruct",
+    free: "free hosted credits on signup",
+    url: "https://build.nvidia.com",
+  },
 }
 
 function keysEnvPath(): string {
@@ -51,11 +123,108 @@ function writeKeys(keys: Record<string, string>): void {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   const lines = [
     "# FreeCode API Keys — auto-loaded at startup",
-    "# Edit this file or use: freecode keys set <provider> <key>",
+    "# Edit manually or use: freecode keys set <provider> <key>",
     "",
     ...Object.entries(keys).map(([k, v]) => `${k}=${v}`),
   ]
   fs.writeFileSync(file, lines.join("\n") + "\n", { mode: 0o600 })
+}
+
+function countConfigured(): number {
+  const stored = readKeys()
+  return Object.values(PROVIDERS).filter(
+    (p) => stored[p.envKey] || process.env[p.envKey]
+  ).length
+}
+
+async function runSetupWizard(onlyUnconfigured = false) {
+  const stored = readKeys()
+  const D = UI.Style.TEXT_DIM
+  const H = UI.Style.TEXT_HIGHLIGHT
+  const S = UI.Style.TEXT_SUCCESS
+  const R = UI.Style.TEXT_NORMAL
+
+  UI.empty()
+  prompts.intro(
+    `${H}FreeCode${R} — free provider setup`
+  )
+
+  prompts.log.info(
+    `Add API keys for free-tier AI providers. More keys = more capacity.\n` +
+    `${D}Keys are saved to: ${keysEnvPath()}${R}`
+  )
+
+  const newKeys: Record<string, string> = { ...stored }
+  let added = 0
+
+  for (const [id, info] of Object.entries(PROVIDERS)) {
+    const alreadySet = !!(stored[info.envKey] || process.env[info.envKey])
+    if (onlyUnconfigured && alreadySet) continue
+
+    const badge = info.badge ? ` ${D}[${info.badge}]${R}` : ""
+    const header = `${H}${info.label}${R}${badge}`
+    const detail = [
+      `  Model : ${info.model}`,
+      `  Free  : ${info.free}`,
+      `  Signup: ${info.url}`,
+      info.note ? `  Note  : ${info.note}` : "",
+    ].filter(Boolean).join("\n")
+
+    prompts.log.step(`${header}\n${D}${detail}${R}`)
+
+    const existing = stored[info.envKey]
+    const masked = existing ? `${existing.slice(0, 8)}${"*".repeat(Math.max(0, existing.length - 8))}` : ""
+
+    const input = await prompts.text({
+      message: alreadySet
+        ? `${info.label} key ${D}(current: ${masked} — press Enter to keep)${R}`
+        : `${info.label} API key ${D}(press Enter to skip)${R}`,
+      placeholder: `Paste your ${info.label} API key here…`,
+      validate: () => undefined,
+    })
+
+    if (prompts.isCancel(input)) {
+      prompts.cancel("Setup cancelled.")
+      process.exit(0)
+    }
+
+    const trimmed = String(input ?? "").trim()
+    if (trimmed) {
+      newKeys[info.envKey] = trimmed
+      added++
+      prompts.log.success(`${info.label} key saved`)
+    } else if (alreadySet) {
+      prompts.log.info(`${info.label} key unchanged`)
+    } else {
+      prompts.log.warn(`${info.label} skipped`)
+    }
+
+    UI.empty()
+  }
+
+  writeKeys(newKeys)
+
+  const total = countConfigured()
+  const bar = total >= 6 ? `${S}●●●●●●${R}` :
+              total >= 4 ? `${S}●●●●${R}${D}●●${R}` :
+              total >= 2 ? `${S}●●${R}${D}●●●●${R}` :
+                           `${D}●●●●●●${R}`
+
+  prompts.note(
+    `Configured: ${S}${total}${R} / ${Object.keys(PROVIDERS).length} providers  ${bar}\n\n` +
+    (total === 0
+      ? `${D}No providers configured. FreeCode won't work without at least one key.\nRun ${H}freecode keys setup${D} to add keys.${R}`
+      : total < 3
+      ? `${D}Tip: add more keys for better reliability and higher limits.${R}`
+      : `${D}You're well covered. FreeCode will rotate between providers automatically.${R}`),
+    "Summary"
+  )
+
+  if (added > 0) {
+    prompts.outro(`${S}✓${R} ${added} key${added === 1 ? "" : "s"} saved — run ${H}freecode${R} to start`)
+  } else {
+    prompts.outro(`No changes made — run ${H}freecode keys setup${R} to add keys`)
+  }
 }
 
 export const KeysCommand: CommandModule = {
@@ -64,19 +233,50 @@ export const KeysCommand: CommandModule = {
   builder: (yargs) =>
     yargs
       .command({
+        command: "setup",
+        describe: "interactive wizard to configure all free provider keys",
+        builder: (y) =>
+          y.option("only-missing", {
+            describe: "only prompt for providers with no key set",
+            type: "boolean",
+            default: false,
+          }),
+        handler: async (argv) => {
+          await runSetupWizard(argv["only-missing"] as boolean)
+        },
+      })
+      .command({
         command: "list",
-        describe: "show all configured provider API keys",
+        aliases: ["ls"],
+        describe: "show all free providers and their key status",
         handler: () => {
           const stored = readKeys()
-          console.log("\nFreeCode provider API keys\n")
-          console.log(`  Config file: ${keysEnvPath()}\n`)
-          for (const [name, info] of Object.entries(PROVIDER_ENV_MAP)) {
+          const D = UI.Style.TEXT_DIM
+          const H = UI.Style.TEXT_HIGHLIGHT
+          const S = UI.Style.TEXT_SUCCESS
+          const W = UI.Style.TEXT_WARNING
+          const R = UI.Style.TEXT_NORMAL
+
+          UI.empty()
+          prompts.intro(`${H}FreeCode${R} provider keys  ${D}${keysEnvPath()}${R}`)
+
+          for (const [id, info] of Object.entries(PROVIDERS)) {
             const val = stored[info.envKey] || process.env[info.envKey]
-            const status = val ? `\x1b[32m✓ configured\x1b[0m` : `\x1b[2mnot set\x1b[0m`
-            console.log(`  ${info.label.padEnd(14)} ${status}  (${info.url})`)
+            const status = val ? `${S}✓ configured${R}` : `${D}not set${R}`
+            const badge = info.badge ? ` ${D}[${info.badge}]${R}` : ""
+            prompts.log.info(
+              `${info.label.padEnd(14)}${badge.padEnd(14)} ${status}  ${D}${info.url}${R}`
+            )
           }
-          console.log("\n  Usage: freecode keys set <provider> <api-key>")
-          console.log("  Providers: " + Object.keys(PROVIDER_ENV_MAP).join(", ") + "\n")
+
+          const total = countConfigured()
+          const suggestion = total === 0
+            ? `\n${W}No providers configured!${R} Run ${H}freecode keys setup${R} to get started.`
+            : total < 3
+            ? `\n${W}${total}/${Object.keys(PROVIDERS).length} configured.${R} Run ${H}freecode keys setup --only-missing${R} to add more.`
+            : `\n${S}${total}/${Object.keys(PROVIDERS).length} configured.${R}`
+
+          prompts.outro(suggestion)
         },
       })
       .command({
@@ -85,26 +285,28 @@ export const KeysCommand: CommandModule = {
         handler: (argv) => {
           const provider = String(argv.provider).toLowerCase()
           const apikey = String(argv.apikey)
-          const info = PROVIDER_ENV_MAP[provider]
+          const info = PROVIDERS[provider]
           if (!info) {
             console.error(`\nUnknown provider: ${provider}`)
-            console.error("  Valid providers: " + Object.keys(PROVIDER_ENV_MAP).join(", ") + "\n")
+            console.error("  Valid providers: " + Object.keys(PROVIDERS).join(", ") + "\n")
             process.exit(1)
           }
           const keys = readKeys()
           keys[info.envKey] = apikey
           writeKeys(keys)
-          console.log(`\n\x1b[32m✓\x1b[0m ${info.label} API key saved to ${keysEnvPath()}\n`)
+          console.log(`\n${UI.Style.TEXT_SUCCESS}✓${UI.Style.TEXT_NORMAL} ${info.label} key saved to ${keysEnvPath()}\n`)
         },
       })
       .command({
         command: "remove <provider>",
+        aliases: ["rm"],
         describe: "remove API key for a provider",
         handler: (argv) => {
           const provider = String(argv.provider).toLowerCase()
-          const info = PROVIDER_ENV_MAP[provider]
+          const info = PROVIDERS[provider]
           if (!info) {
             console.error(`\nUnknown provider: ${provider}`)
+            console.error("  Valid providers: " + Object.keys(PROVIDERS).join(", ") + "\n")
             process.exit(1)
           }
           const keys = readKeys()
@@ -114,9 +316,9 @@ export const KeysCommand: CommandModule = {
           }
           delete keys[info.envKey]
           writeKeys(keys)
-          console.log(`\n\x1b[33m–\x1b[0m ${info.label} API key removed\n`)
+          console.log(`\n${UI.Style.TEXT_WARNING}–${UI.Style.TEXT_NORMAL} ${info.label} key removed\n`)
         },
       })
-      .demandCommand(1, "Specify a subcommand: list, set, or remove"),
+      .demandCommand(1, `\nRun ${UI.Style.TEXT_HIGHLIGHT}freecode keys setup${UI.Style.TEXT_NORMAL} to configure free provider keys.\nOr: freecode keys list | set <provider> <key> | remove <provider>\n`),
   handler: () => {},
 }
