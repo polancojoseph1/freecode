@@ -123,7 +123,7 @@ export const PrCommand = cmd({
         await new Promise<void>((resolve, reject) => {
           opencodeProcess.on("exit", (code) => {
             if (code === 0) resolve()
-            else reject(new Error(`opencode exited with code ${code}`))
+            else reject(new Error(`freecode exited with code ${code}`))
           })
           opencodeProcess.on("error", reject)
         })

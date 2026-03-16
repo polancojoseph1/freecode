@@ -521,7 +521,7 @@ export namespace ACP {
       log.info("initialize", { protocolVersion: params.protocolVersion })
 
       const authMethod: AuthMethod = {
-        description: "Run `opencode auth login` in the terminal",
+        description: "Run `freecode auth login` in the terminal",
         name: "Login with opencode",
         id: "opencode-login",
       }
