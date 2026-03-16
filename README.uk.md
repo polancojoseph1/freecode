@@ -1,3 +1,22 @@
+# FreeCode
+
+[![GitHub Stars](https://img.shields.io/github/stars/polancojoseph1/freecode?style=flat-square)](https://github.com/polancojoseph1/freecode/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/polancojoseph1/freecode?style=flat-square)](https://github.com/polancojoseph1/freecode/network)
+[![GitHub Issues](https://img.shields.io/github/issues/polancojoseph1/freecode?style=flat-square)](https://github.com/polancojoseph1/freecode/issues)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+
+> **FreeCode** is a standalone AI coding agent by [Joseph Polanco](https://github.com/polancojoseph1),
+> built on top of [opencode](https://github.com/sst/opencode) by SST.
+> **Not a fork** — it adds free-tier provider rotation (Groq, Cerebras, Gemini, and more)
+> so you can run a full AI coding agent at zero cost.
+> Full credit to the [opencode team at SST](https://github.com/sst/opencode) for the underlying engine.
+
+---
+
+*The documentation below is from [opencode](https://github.com/sst/opencode), the engine FreeCode is built on.*
+
+---
+
 <p align="center">
   <a href="https://opencode.ai">
     <picture>
@@ -140,3 +159,15 @@ OpenCode містить два вбудовані агенти, між яким�
 ---
 
 **Приєднуйтеся до нашої спільноти** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+
+
+---
+
+## Credits
+
+- **FreeCode** — created and maintained by [Joseph Polanco](https://github.com/polancojoseph1)
+- **opencode** — the underlying AI coding agent engine by [SST](https://github.com/sst/opencode), MIT licensed. FreeCode would not exist without it.
+
+---
+
+*MIT License · [FreeCode on GitHub](https://github.com/polancojoseph1/freecode)*
