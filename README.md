@@ -7,9 +7,9 @@
 [![Last Commit](https://img.shields.io/github/last-commit/polancojoseph1/freecode?style=flat-square)](https://github.com/polancojoseph1/freecode/commits/main)
 [![GitHub Release](https://img.shields.io/github/v/release/polancojoseph1/freecode?style=flat-square)](https://github.com/polancojoseph1/freecode/releases)
 
-**FreeCode** is a free, open-source fork of [opencode](https://github.com/sst/opencode) — the AI coding agent — pre-configured to route through free-tier AI providers so you can use a powerful coding agent at zero cost.
+**FreeCode** is a standalone AI coding agent built by [Joseph Polanco](https://github.com/polancojoseph1), powered by [opencode](https://github.com/sst/opencode) under the hood. It pre-configures opencode to route through free-tier AI providers so you get a fully capable coding agent at zero cost.
 
-> Built on top of [opencode by SST](https://github.com/sst/opencode). Full credit to the original authors.
+> FreeCode is not a fork — it's a separate product that layers free provider rotation on top of opencode's infrastructure. Full credit to the [opencode team at SST](https://github.com/sst/opencode) for the underlying engine.
 
 ---
 
@@ -75,8 +75,13 @@ FreeCode powers the **Free Bot** in [BridgeBot](https://github.com/polancojoseph
 
 ---
 
+## Credits
+
+- **FreeCode** — created and maintained by [Joseph Polanco](https://github.com/polancojoseph1)
+- **opencode** — the underlying AI coding agent engine by [SST](https://github.com/sst/opencode), MIT licensed. FreeCode would not exist without it.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-Built on [opencode](https://github.com/sst/opencode) by SST, also MIT licensed.
