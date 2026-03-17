@@ -79,9 +79,9 @@ export namespace Server {
         // Allow CORS preflight requests to succeed without auth.
         // Browser clients sending Authorization headers will preflight with OPTIONS.
         if (c.req.method === "OPTIONS") return next()
-        const password = Flag.OPENCODE_SERVER_PASSWORD
+        const password = Flag.FREECODE_SERVER_PASSWORD
         if (!password) return next()
-        const username = Flag.OPENCODE_SERVER_USERNAME ?? "opencode"
+        const username = Flag.FREECODE_SERVER_USERNAME ?? "freecode"
         return basicAuth({ username, password })(c, next)
       })
       .use(async (c, next) => {
@@ -192,8 +192,8 @@ export namespace Server {
       )
       .use(async (c, next) => {
         if (c.req.path === "/log") return next()
-        const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-opencode-workspace")
-        const raw = c.req.query("directory") || c.req.header("x-opencode-directory") || process.cwd()
+        const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-freecode-workspace")
+        const raw = c.req.query("directory") || c.req.header("x-freecode-directory") || process.cwd()
         const directory = Filesystem.resolve(
           (() => {
             try {
@@ -223,9 +223,9 @@ export namespace Server {
         openAPIRouteHandler(app, {
           documentation: {
             info: {
-              title: "opencode",
+              title: "freecode",
               version: "0.0.3",
-              description: "opencode api",
+              description: "freecode api",
             },
             openapi: "3.1.1",
           },
@@ -577,9 +577,9 @@ export namespace Server {
     const result = await generateSpecs(Default(), {
       documentation: {
         info: {
-          title: "opencode",
+          title: "freecode",
           version: "1.0.0",
-          description: "opencode api",
+          description: "freecode api",
         },
         openapi: "3.1.1",
       },

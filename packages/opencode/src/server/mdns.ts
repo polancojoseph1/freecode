@@ -12,8 +12,8 @@ export namespace MDNS {
     if (bonjour) unpublish()
 
     try {
-      const host = domain ?? "opencode.local"
-      const name = `opencode-${port}`
+      const host = domain ?? "freecode.local"
+      const name = `freecode-${port}`
       bonjour = new Bonjour()
       const service = bonjour.publish({
         name,

@@ -1,9 +1,9 @@
-const dir = process.env.OPENCODE_E2E_PROJECT_DIR ?? process.cwd()
-const title = process.env.OPENCODE_E2E_SESSION_TITLE ?? "E2E Session"
-const text = process.env.OPENCODE_E2E_MESSAGE ?? "Seeded for UI e2e"
-const model = process.env.OPENCODE_E2E_MODEL ?? "opencode/gpt-5-nano"
+const dir = process.env.FREECODE_E2E_PROJECT_DIR ?? process.cwd()
+const title = process.env.FREECODE_E2E_SESSION_TITLE ?? "E2E Session"
+const text = process.env.FREECODE_E2E_MESSAGE ?? "Seeded for UI e2e"
+const model = process.env.FREECODE_E2E_MODEL ?? "freecode/gpt-5-nano"
 const parts = model.split("/")
-const providerID = parts[0] ?? "opencode"
+const providerID = parts[0] ?? "freecode"
 const modelID = parts[1] ?? "gpt-5-nano"
 const now = Date.now()
 

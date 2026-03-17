@@ -73,7 +73,7 @@ export namespace ProviderAuthService {
 }
 
 export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService, ProviderAuthService.Service>()(
-  "@opencode/ProviderAuth",
+  "@freecode/ProviderAuth",
 ) {
   static readonly layer = Layer.effect(
     ProviderAuthService,

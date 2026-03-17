@@ -5,7 +5,7 @@ import { Instance } from "@/project/instance"
 type Disposer = (directory: string) => Effect.Effect<void>
 const disposers = new Set<Disposer>()
 
-const TypeId = "~opencode/InstanceState"
+const TypeId = "~freecode/InstanceState"
 
 /**
  * Effect version of `Instance.state` — lazily-initialized, per-directory

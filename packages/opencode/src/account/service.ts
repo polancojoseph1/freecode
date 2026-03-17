@@ -97,7 +97,7 @@ class TokenRefreshRequest extends Schema.Class<TokenRefreshRequest>("TokenRefres
   client_id: Schema.String,
 }) {}
 
-const clientId = "opencode-cli"
+const clientId = "freecode-cli"
 
 const mapAccountServiceError =
   (message = "Account service operation failed") =>
@@ -126,7 +126,7 @@ export namespace AccountService {
   }
 }
 
-export class AccountService extends ServiceMap.Service<AccountService, AccountService.Service>()("@opencode/Account") {
+export class AccountService extends ServiceMap.Service<AccountService, AccountService.Service>()("@freecode/Account") {
   static readonly layer: Layer.Layer<AccountService, never, AccountRepo | HttpClient.HttpClient> = Layer.effect(
     AccountService,
     Effect.gen(function* () {

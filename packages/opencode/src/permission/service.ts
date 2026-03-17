@@ -128,7 +128,7 @@ export declare namespace PermissionService {
 }
 
 export class PermissionService extends ServiceMap.Service<PermissionService, PermissionService.Api>()(
-  "@opencode/PermissionNext",
+  "@freecode/PermissionNext",
 ) {
   static readonly layer = Layer.effect(
     PermissionService,

@@ -20,8 +20,8 @@ export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
   name: "Route",
   init: () => {
     const [store, setStore] = createStore<Route>(
-      process.env["OPENCODE_ROUTE"]
-        ? JSON.parse(process.env["OPENCODE_ROUTE"])
+      process.env["FREECODE_ROUTE"]
+        ? JSON.parse(process.env["FREECODE_ROUTE"])
         : {
             type: "home",
           },

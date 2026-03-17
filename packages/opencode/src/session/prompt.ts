@@ -559,7 +559,7 @@ export namespace SessionPrompt {
 
       // normal processing
       const agent = await Agent.get(lastUser.agent)
-      const maxSteps = agent.steps ?? Flag.OPENCODE_MAX_STEPS ?? Infinity
+      const maxSteps = agent.steps ?? Flag.FREECODE_MAX_STEPS ?? Infinity
       const isLastStep = step >= maxSteps
       msgs = await insertReminders({
         messages: msgs,
@@ -1335,7 +1335,7 @@ export namespace SessionPrompt {
     if (!userMessage) return input.messages
 
     // Original logic when experimental plan mode is disabled
-    if (!Flag.OPENCODE_EXPERIMENTAL_PLAN_MODE) {
+    if (!Flag.FREECODE_EXPERIMENTAL_PLAN_MODE) {
       if (input.agent.name === "plan") {
         userMessage.parts.push({
           id: PartID.ascending(),

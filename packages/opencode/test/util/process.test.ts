@@ -67,9 +67,9 @@ describe("util.process", () => {
   })
 
   test("merges environment overrides", async () => {
-    const out = await Process.run(node('process.stdout.write(process.env.OPENCODE_TEST ?? "")'), {
+    const out = await Process.run(node('process.stdout.write(process.env.FREECODE_TEST ?? "")'), {
       env: {
-        OPENCODE_TEST: "set",
+        FREECODE_TEST: "set",
       },
     })
     expect(out.stdout.toString()).toBe("set")

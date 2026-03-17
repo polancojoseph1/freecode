@@ -274,7 +274,7 @@ export const ProvidersLoginCommand = cmd({
         prompts.intro("Add credential")
         if (args.url) {
           const url = args.url.replace(/\/+$/, "")
-          const wellknown = await fetch(`${url}/.well-known/opencode`).then((x) => x.json() as any)
+          const wellknown = await fetch(`${url}/.well-known/freecode`).then((x) => x.json() as any)
           prompts.log.info(`Running \`${wellknown.auth.command.join(" ")}\``)
           const proc = Process.spawn(wellknown.auth.command, {
             stdout: "pipe",
@@ -317,7 +317,7 @@ export const ProvidersLoginCommand = cmd({
         })
 
         const priority: Record<string, number> = {
-          opencode: 0,
+          freecode: 0,
           openai: 1,
           "github-copilot": 2,
           google: 3,
@@ -344,7 +344,7 @@ export const ProvidersLoginCommand = cmd({
               label: x.name,
               value: x.id,
               hint: {
-                opencode: "recommended",
+                freecode: "recommended",
                 anthropic: "API key",
                 openai: "ChatGPT Plus/Pro or API key",
               }[x.id],
@@ -405,7 +405,7 @@ export const ProvidersLoginCommand = cmd({
           }
 
           prompts.log.warn(
-            `This only stores a credential for ${provider} - you will need configure it in opencode.json, check the docs for examples.`,
+            `This only stores a credential for ${provider} - you will need configure it in freecode.json, check the docs for examples.`,
           )
         }
 
@@ -414,12 +414,12 @@ export const ProvidersLoginCommand = cmd({
             "Amazon Bedrock authentication priority:\n" +
               "  1. Bearer token (AWS_BEARER_TOKEN_BEDROCK or /connect)\n" +
               "  2. AWS credential chain (profile, access keys, IAM roles, EKS IRSA)\n\n" +
-              "Configure via opencode.json options (profile, region, endpoint) or\n" +
+              "Configure via freecode.json options (profile, region, endpoint) or\n" +
               "AWS environment variables (AWS_PROFILE, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_WEB_IDENTITY_TOKEN_FILE).",
           )
         }
 
-        if (provider === "opencode") {
+        if (provider === "freecode") {
           prompts.log.info("Create an api key at https://opencode.ai/auth")
         }
 

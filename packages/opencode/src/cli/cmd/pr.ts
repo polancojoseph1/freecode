@@ -6,7 +6,7 @@ import { git } from "@/util/git"
 
 export const PrCommand = cmd({
   command: "pr <number>",
-  describe: "fetch and checkout a GitHub PR branch, then run opencode",
+  describe: "fetch and checkout a GitHub PR branch, then run freecode",
   builder: (yargs) =>
     yargs.positional("number", {
       type: "number",
@@ -82,15 +82,15 @@ export const PrCommand = cmd({
               })
             }
 
-            // Check for opencode session link in PR body
+            // Check for freecode session link in PR body
             if (prInfo && prInfo.body) {
               const sessionMatch = prInfo.body.match(/https:\/\/opncd\.ai\/s\/([a-zA-Z0-9_-]+)/)
               if (sessionMatch) {
                 const sessionUrl = sessionMatch[0]
-                UI.println(`Found opencode session: ${sessionUrl}`)
+                UI.println(`Found freecode session: ${sessionUrl}`)
                 UI.println(`Importing session...`)
 
-                const importResult = await Process.text(["opencode", "import", sessionUrl], {
+                const importResult = await Process.text(["freecode", "import", sessionUrl], {
                   nothrow: true,
                 })
                 if (importResult.code === 0) {
@@ -109,23 +109,23 @@ export const PrCommand = cmd({
 
         UI.println(`Successfully checked out PR #${prNumber} as branch '${localBranchName}'`)
         UI.println()
-        UI.println("Starting opencode...")
+        UI.println("Starting freecode...")
         UI.println()
 
-        // Launch opencode TUI with session ID if available
+        // Launch freecode TUI with session ID if available
         const { spawn } = await import("child_process")
-        const opencodeArgs = sessionId ? ["-s", sessionId] : []
-        const opencodeProcess = spawn("opencode", opencodeArgs, {
+        const freecodeArgs = sessionId ? ["-s", sessionId] : []
+        const freecodeProcess = spawn("freecode", freecodeArgs, {
           stdio: "inherit",
           cwd: process.cwd(),
         })
 
         await new Promise<void>((resolve, reject) => {
-          opencodeProcess.on("exit", (code) => {
+          freecodeProcess.on("exit", (code) => {
             if (code === 0) resolve()
             else reject(new Error(`freecode exited with code ${code}`))
           })
-          opencodeProcess.on("error", reject)
+          freecodeProcess.on("error", reject)
         })
       },
     })

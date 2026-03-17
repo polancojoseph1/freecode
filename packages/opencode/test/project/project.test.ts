@@ -79,8 +79,8 @@ describe("Project.fromDirectory", () => {
     expect(project.vcs).toBe("git")
     expect(project.worktree).toBe(tmp.path)
 
-    const opencodeFile = path.join(tmp.path, ".git", "opencode")
-    const fileExists = await Filesystem.exists(opencodeFile)
+    const freecodeFile = path.join(tmp.path, ".git", "freecode")
+    const fileExists = await Filesystem.exists(freecodeFile)
     expect(fileExists).toBe(false)
   })
 
@@ -95,8 +95,8 @@ describe("Project.fromDirectory", () => {
     expect(project.vcs).toBe("git")
     expect(project.worktree).toBe(tmp.path)
 
-    const opencodeFile = path.join(tmp.path, ".git", "opencode")
-    const fileExists = await Filesystem.exists(opencodeFile)
+    const freecodeFile = path.join(tmp.path, ".git", "freecode")
+    const fileExists = await Filesystem.exists(freecodeFile)
     expect(fileExists).toBe(true)
   })
 
@@ -187,7 +187,7 @@ describe("Project.fromDirectory with worktrees", () => {
       expect(wt.id).toBe(main.id)
 
       // Cache should live in the common .git dir, not the worktree's .git file
-      const cache = path.join(tmp.path, ".git", "opencode")
+      const cache = path.join(tmp.path, ".git", "freecode")
       const exists = await Filesystem.exists(cache)
       expect(exists).toBe(true)
     } finally {

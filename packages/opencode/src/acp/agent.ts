@@ -522,15 +522,15 @@ export namespace ACP {
 
       const authMethod: AuthMethod = {
         description: "Run `freecode auth login` in the terminal",
-        name: "Login with opencode",
-        id: "opencode-login",
+        name: "Login with freecode",
+        id: "freecode-login",
       }
 
       // If client supports terminal-auth capability, use that instead.
       if (params.clientCapabilities?._meta?.["terminal-auth"] === true) {
         authMethod._meta = {
           "terminal-auth": {
-            command: "opencode",
+            command: "freecode",
             args: ["auth", "login"],
             label: "OpenCode Login",
           },
@@ -557,7 +557,7 @@ export namespace ACP {
         },
         authMethods: [authMethod],
         agentInfo: {
-          name: "OpenCode",
+          name: "FreeCode",
           version: Installation.VERSION,
         },
       }
@@ -1561,12 +1561,12 @@ export namespace ACP {
 
     if (specified && !providers.length) return specified
 
-    const opencodeProvider = providers.find((p) => p.id === "opencode")
-    if (opencodeProvider) {
-      if (opencodeProvider.models["big-pickle"]) {
-        return { providerID: ProviderID.opencode, modelID: ModelID.make("big-pickle") }
+    const freecodeProvider = providers.find((p) => p.id === "freecode")
+    if (freecodeProvider) {
+      if (freecodeProvider.models["big-pickle"]) {
+        return { providerID: ProviderID.freecode, modelID: ModelID.make("big-pickle") }
       }
-      const [best] = Provider.sort(Object.values(opencodeProvider.models))
+      const [best] = Provider.sort(Object.values(freecodeProvider.models))
       if (best) {
         return {
           providerID: ProviderID.make(best.providerID),
@@ -1586,7 +1586,7 @@ export namespace ACP {
 
     if (specified) return specified
 
-    return { providerID: ProviderID.opencode, modelID: ModelID.make("big-pickle") }
+    return { providerID: ProviderID.freecode, modelID: ModelID.make("big-pickle") }
   }
 
   function parseUri(
@@ -1701,7 +1701,7 @@ export namespace ACP {
     availableVariants: string[]
   }) {
     return {
-      opencode: {
+      freecode: {
         modelId: `${input.model.providerID}/${input.model.modelID}`,
         variant: input.variant ?? null,
         availableVariants: input.availableVariants,

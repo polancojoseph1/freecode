@@ -207,16 +207,16 @@ export namespace LLM {
       maxOutputTokens,
       abortSignal: input.abort,
       headers: {
-        ...(input.model.providerID.startsWith("opencode")
+        ...(input.model.providerID.startsWith("freecode")
           ? {
-              "x-opencode-project": Instance.project.id,
-              "x-opencode-session": input.sessionID,
-              "x-opencode-request": input.user.id,
-              "x-opencode-client": Flag.OPENCODE_CLIENT,
+              "x-freecode-project": Instance.project.id,
+              "x-freecode-session": input.sessionID,
+              "x-freecode-request": input.user.id,
+              "x-freecode-client": Flag.FREECODE_CLIENT,
             }
           : input.model.providerID !== "anthropic"
             ? {
-                "User-Agent": `opencode/${Installation.VERSION}`,
+                "User-Agent": `freecode/${Installation.VERSION}`,
               }
             : undefined),
         ...input.model.headers,
