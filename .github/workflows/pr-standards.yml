@@ -32,7 +32,8 @@ jobs:
               const { data: file } = await github.rest.repos.getContent({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                path: '.github/TEAM_MEMBERS'
+                path: '.github/TEAM_MEMBERS',
+                ref: pr.head.sha
               });
               const members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
               if (members.includes(login)) {
@@ -182,7 +183,8 @@ jobs:
               const { data: file } = await github.rest.repos.getContent({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                path: '.github/TEAM_MEMBERS'
+                path: '.github/TEAM_MEMBERS',
+                ref: pr.head.sha
               });
               const members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
               if (members.includes(login)) {
