@@ -12,7 +12,8 @@ export const ServeCommand = cmd({
   describe: "starts a headless freecode server",
   handler: async (args) => {
     if (!Flag.FREECODE_SERVER_PASSWORD) {
-      console.log("Warning: FREECODE_SERVER_PASSWORD is not set; server is unsecured.")
+      console.error("Error: FREECODE_SERVER_PASSWORD must be set.")
+      process.exit(1)
     }
     const opts = await resolveNetworkOptions(args)
     const server = Server.listen(opts)

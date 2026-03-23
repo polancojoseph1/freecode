@@ -34,7 +34,8 @@ export const WebCommand = cmd({
   describe: "start freecode server and open web interface",
   handler: async (args) => {
     if (!Flag.FREECODE_SERVER_PASSWORD) {
-      UI.println(UI.Style.TEXT_WARNING_BOLD + "!  " + "FREECODE_SERVER_PASSWORD is not set; server is unsecured.")
+      UI.println(UI.Style.TEXT_DANGER_BOLD + "!  " + "Error: FREECODE_SERVER_PASSWORD must be set.")
+      process.exit(1)
     }
     const opts = await resolveNetworkOptions(args)
     const server = Server.listen(opts)
