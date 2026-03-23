@@ -33,7 +33,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 path: '.github/TEAM_MEMBERS',
-                ref: pr.base.ref
+                ref: pr.base.sha
               });
               const members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
               if (members.includes(login)) {
@@ -184,7 +184,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 path: '.github/TEAM_MEMBERS',
-                ref: pr.base.ref
+                ref: pr.base.sha
               });
               const members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
               if (members.includes(login)) {
