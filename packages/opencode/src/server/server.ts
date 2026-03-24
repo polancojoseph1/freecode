@@ -80,7 +80,9 @@ export namespace Server {
         // Browser clients sending Authorization headers will preflight with OPTIONS.
         if (c.req.method === "OPTIONS") return next()
         const password = Flag.FREECODE_SERVER_PASSWORD
-        if (!password) return next()
+        if (!password) {
+          return c.json({ error: "Unauthorized: FREECODE_SERVER_PASSWORD is not set" }, 401)
+        }
         const username = Flag.FREECODE_SERVER_USERNAME ?? "freecode"
         return basicAuth({ username, password })(c, next)
       })
@@ -115,10 +117,6 @@ export namespace Server {
             )
               return input
 
-            // *.opencode.ai (https only, adjust if needed)
-            if (/^https:\/\/([a-z0-9-]+\.)*opencode\.ai$/.test(input)) {
-              return input
-            }
             if (opts?.cors?.includes(input)) {
               return input
             }
