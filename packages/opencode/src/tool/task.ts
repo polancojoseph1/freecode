@@ -23,6 +23,7 @@ const parameters = z.object({
     )
     .optional(),
   command: z.string().describe("The command that triggered this task").optional(),
+  parts: z.array(z.record(z.string(), z.any())).optional(),
 })
 
 export const TaskTool = Tool.define("task", async (ctx) => {
@@ -124,7 +125,10 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       }
       ctx.abort.addEventListener("abort", cancel)
       using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
-      const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
+
+      const promptParts = params.parts
+        ? (params.parts as SessionPrompt.PromptInput["parts"])
+        : await SessionPrompt.resolvePromptParts(params.prompt)
 
       const result = await SessionPrompt.prompt({
         messageID,
