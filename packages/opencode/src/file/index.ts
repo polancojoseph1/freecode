@@ -448,19 +448,24 @@ export namespace File {
 
     if (untrackedOutput.trim()) {
       const untrackedFiles = untrackedOutput.trim().split("\n")
-      for (const filepath of untrackedFiles) {
-        try {
-          const content = await Filesystem.readText(path.join(Instance.directory, filepath))
-          const lines = content.split("\n").length
-          changedFiles.push({
-            path: filepath,
-            added: lines,
-            removed: 0,
-            status: "added",
-          })
-        } catch {
-          continue
-        }
+      const results = await Promise.all(
+        untrackedFiles.map(async (filepath) => {
+          try {
+            const content = await Filesystem.readText(path.join(Instance.directory, filepath))
+            const lines = content.split("\n").length
+            return {
+              path: filepath,
+              added: lines,
+              removed: 0,
+              status: "added",
+            } as Info
+          } catch {
+            return undefined
+          }
+        }),
+      )
+      for (const result of results) {
+        if (result) changedFiles.push(result)
       }
     }
 
@@ -500,8 +505,6 @@ export namespace File {
     const project = Instance.project
     const full = path.join(Instance.directory, file)
 
-    // TODO: Filesystem.contains is lexical only - symlinks inside the project can escape.
-    // TODO: On Windows, cross-drive paths bypass this check. Consider realpath canonicalization.
     if (!Instance.containsPath(full)) {
       throw new Error(`Access denied: path escapes project directory`)
     }
@@ -580,8 +583,6 @@ export namespace File {
     }
     const resolved = dir ? path.join(Instance.directory, dir) : Instance.directory
 
-    // TODO: Filesystem.contains is lexical only - symlinks inside the project can escape.
-    // TODO: On Windows, cross-drive paths bypass this check. Consider realpath canonicalization.
     if (!Instance.containsPath(resolved)) {
       throw new Error(`Access denied: path escapes project directory`)
     }
