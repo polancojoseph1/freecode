@@ -45,7 +45,9 @@ describe("session messages endpoint", () => {
         const ids = await fill(session.id, 5)
         const app = Server.Default()
 
-        const a = await app.request(`/session/${session.id}/message?limit=2`)
+        const headers = { Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}` }
+
+        const a = await app.request(`/session/${session.id}/message?limit=2`, { headers })
         expect(a.status).toBe(200)
         const aBody = (await a.json()) as MessageV2.WithParts[]
         expect(aBody.map((item) => item.info.id)).toEqual(ids.slice(-2))
@@ -53,7 +55,7 @@ describe("session messages endpoint", () => {
         expect(cursor).toBeTruthy()
         expect(a.headers.get("link")).toContain('rel="next"')
 
-        const b = await app.request(`/session/${session.id}/message?limit=2&before=${encodeURIComponent(cursor!)}`)
+        const b = await app.request(`/session/${session.id}/message?limit=2&before=${encodeURIComponent(cursor!)}`, { headers })
         expect(b.status).toBe(200)
         const bBody = (await b.json()) as MessageV2.WithParts[]
         expect(bBody.map((item) => item.info.id)).toEqual(ids.slice(-4, -2))
@@ -71,7 +73,9 @@ describe("session messages endpoint", () => {
         const ids = await fill(session.id, 3)
         const app = Server.Default()
 
-        const res = await app.request(`/session/${session.id}/message`)
+        const headers = { Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}` }
+
+        const res = await app.request(`/session/${session.id}/message`, { headers })
         expect(res.status).toBe(200)
         const body = (await res.json()) as MessageV2.WithParts[]
         expect(body.map((item) => item.info.id)).toEqual(ids)
@@ -88,10 +92,12 @@ describe("session messages endpoint", () => {
         const session = await Session.create({})
         const app = Server.Default()
 
-        const bad = await app.request(`/session/${session.id}/message?limit=2&before=bad`)
+        const headers = { Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}` }
+
+        const bad = await app.request(`/session/${session.id}/message?limit=2&before=bad`, { headers })
         expect(bad.status).toBe(400)
 
-        const miss = await app.request(`/session/ses_missing/message?limit=2`)
+        const miss = await app.request(`/session/ses_missing/message?limit=2`, { headers })
         expect(miss.status).toBe(404)
 
         await Session.remove(session.id)
@@ -107,7 +113,9 @@ describe("session messages endpoint", () => {
         await fill(session.id, 520)
         const app = Server.Default()
 
-        const res = await app.request(`/session/${session.id}/message?limit=510`)
+        const headers = { Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}` }
+
+        const res = await app.request(`/session/${session.id}/message?limit=510`, { headers })
         expect(res.status).toBe(200)
         const body = (await res.json()) as MessageV2.WithParts[]
         expect(body).toHaveLength(510)

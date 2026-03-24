@@ -20,7 +20,10 @@ describe("tui.selectSession endpoint", () => {
         const app = Server.Default()
         const response = await app.request("/tui/select-session", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`
+          },
           body: JSON.stringify({ sessionID: session.id }),
         })
 
@@ -45,7 +48,10 @@ describe("tui.selectSession endpoint", () => {
         const app = Server.Default()
         const response = await app.request("/tui/select-session", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`
+          },
           body: JSON.stringify({ sessionID: nonExistentSessionID }),
         })
 
@@ -66,7 +72,10 @@ describe("tui.selectSession endpoint", () => {
         const app = Server.Default()
         const response = await app.request("/tui/select-session", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`
+          },
           body: JSON.stringify({ sessionID: invalidSessionID }),
         })
 

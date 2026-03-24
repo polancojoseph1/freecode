@@ -676,7 +676,14 @@ export const RunCommand = cmd({
         const request = new Request(input, init)
         return Server.Default().fetch(request)
       }) as typeof globalThis.fetch
-      const sdk = createOpencodeClient({ baseUrl: "http://freecode.internal", fetch: fetchFn })
+      const password = args.password ?? process.env.FREECODE_SERVER_PASSWORD
+      const headers = (() => {
+        if (!password) return undefined
+        const username = process.env.FREECODE_SERVER_USERNAME ?? "freecode"
+        const auth = `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`
+        return { Authorization: auth }
+      })()
+      const sdk = createOpencodeClient({ baseUrl: "http://freecode.internal", directory: directory ?? process.cwd(), headers, fetch: fetchFn })
       await execute(sdk)
     })
   },

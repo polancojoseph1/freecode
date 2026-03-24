@@ -33,6 +33,7 @@ describe("project.initGit endpoint", () => {
         method: "POST",
         headers: {
           "x-freecode-directory": tmp.path,
+          Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`,
         },
       })
       const body = await init.json()
@@ -52,6 +53,7 @@ describe("project.initGit endpoint", () => {
       const current = await app.request("/project/current", {
         headers: {
           "x-freecode-directory": tmp.path,
+          Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`,
         },
       })
       expect(current.status).toBe(200)
@@ -89,6 +91,7 @@ describe("project.initGit endpoint", () => {
         method: "POST",
         headers: {
           "x-freecode-directory": tmp.path,
+          Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`,
         },
       })
       expect(init.status).toBe(200)
@@ -104,6 +107,7 @@ describe("project.initGit endpoint", () => {
       const current = await app.request("/project/current", {
         headers: {
           "x-freecode-directory": tmp.path,
+          Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`,
         },
       })
       expect(current.status).toBe(200)
