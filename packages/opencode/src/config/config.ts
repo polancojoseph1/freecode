@@ -383,114 +383,126 @@ export namespace Config {
 
   async function loadCommand(dir: string) {
     const result: Record<string, Command> = {}
-    for (const item of await Glob.scan("{command,commands}/**/*.md", {
+    const items = await Glob.scan("{command,commands}/**/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })) {
-      const md = await ConfigMarkdown.parse(item).catch(async (err) => {
-        const message = ConfigMarkdown.FrontmatterError.isInstance(err)
-          ? err.data.message
-          : `Failed to parse command ${item}`
-        const { Session } = await import("@/session")
-        Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
-        log.error("failed to load command", { command: item, err })
-        return undefined
-      })
-      if (!md) continue
+    })
 
-      const patterns = ["/.freecode/command/", "/.freecode/commands/", "/command/", "/commands/"]
-      const file = rel(item, patterns) ?? path.basename(item)
-      const name = trim(file)
+    await Promise.all(
+      items.map(async (item) => {
+        const md = await ConfigMarkdown.parse(item).catch(async (err) => {
+          const message = ConfigMarkdown.FrontmatterError.isInstance(err)
+            ? err.data.message
+            : `Failed to parse command ${item}`
+          const { Session } = await import("@/session")
+          Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
+          log.error("failed to load command", { command: item, err })
+          return undefined
+        })
+        if (!md) return
 
-      const config = {
-        name,
-        ...md.data,
-        template: md.content.trim(),
-      }
-      const parsed = Command.safeParse(config)
-      if (parsed.success) {
-        result[config.name] = parsed.data
-        continue
-      }
-      throw new InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
-    }
+        const patterns = ["/.freecode/command/", "/.freecode/commands/", "/command/", "/commands/"]
+        const file = rel(item, patterns) ?? path.basename(item)
+        const name = trim(file)
+
+        const config = {
+          name,
+          ...md.data,
+          template: md.content.trim(),
+        }
+        const parsed = Command.safeParse(config)
+        if (parsed.success) {
+          result[config.name] = parsed.data
+          return
+        }
+        throw new InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
+      }),
+    )
     return result
   }
 
   async function loadAgent(dir: string) {
     const result: Record<string, Agent> = {}
 
-    for (const item of await Glob.scan("{agent,agents}/**/*.md", {
+    const items = await Glob.scan("{agent,agents}/**/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })) {
-      const md = await ConfigMarkdown.parse(item).catch(async (err) => {
-        const message = ConfigMarkdown.FrontmatterError.isInstance(err)
-          ? err.data.message
-          : `Failed to parse agent ${item}`
-        const { Session } = await import("@/session")
-        Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
-        log.error("failed to load agent", { agent: item, err })
-        return undefined
-      })
-      if (!md) continue
+    })
 
-      const patterns = ["/.freecode/agent/", "/.freecode/agents/", "/agent/", "/agents/"]
-      const file = rel(item, patterns) ?? path.basename(item)
-      const agentName = trim(file)
+    await Promise.all(
+      items.map(async (item) => {
+        const md = await ConfigMarkdown.parse(item).catch(async (err) => {
+          const message = ConfigMarkdown.FrontmatterError.isInstance(err)
+            ? err.data.message
+            : `Failed to parse agent ${item}`
+          const { Session } = await import("@/session")
+          Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
+          log.error("failed to load agent", { agent: item, err })
+          return undefined
+        })
+        if (!md) return
 
-      const config = {
-        name: agentName,
-        ...md.data,
-        prompt: md.content.trim(),
-      }
-      const parsed = Agent.safeParse(config)
-      if (parsed.success) {
-        result[config.name] = parsed.data
-        continue
-      }
-      throw new InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
-    }
+        const patterns = ["/.freecode/agent/", "/.freecode/agents/", "/agent/", "/agents/"]
+        const file = rel(item, patterns) ?? path.basename(item)
+        const agentName = trim(file)
+
+        const config = {
+          name: agentName,
+          ...md.data,
+          prompt: md.content.trim(),
+        }
+        const parsed = Agent.safeParse(config)
+        if (parsed.success) {
+          result[config.name] = parsed.data
+          return
+        }
+        throw new InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
+      }),
+    )
     return result
   }
 
   async function loadMode(dir: string) {
     const result: Record<string, Agent> = {}
-    for (const item of await Glob.scan("{mode,modes}/*.md", {
+    const items = await Glob.scan("{mode,modes}/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })) {
-      const md = await ConfigMarkdown.parse(item).catch(async (err) => {
-        const message = ConfigMarkdown.FrontmatterError.isInstance(err)
-          ? err.data.message
-          : `Failed to parse mode ${item}`
-        const { Session } = await import("@/session")
-        Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
-        log.error("failed to load mode", { mode: item, err })
-        return undefined
-      })
-      if (!md) continue
+    })
 
-      const config = {
-        name: path.basename(item, ".md"),
-        ...md.data,
-        prompt: md.content.trim(),
-      }
-      const parsed = Agent.safeParse(config)
-      if (parsed.success) {
-        result[config.name] = {
-          ...parsed.data,
-          mode: "primary" as const,
+    await Promise.all(
+      items.map(async (item) => {
+        const md = await ConfigMarkdown.parse(item).catch(async (err) => {
+          const message = ConfigMarkdown.FrontmatterError.isInstance(err)
+            ? err.data.message
+            : `Failed to parse mode ${item}`
+          const { Session } = await import("@/session")
+          Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
+          log.error("failed to load mode", { mode: item, err })
+          return undefined
+        })
+        if (!md) return
+
+        const config = {
+          name: path.basename(item, ".md"),
+          ...md.data,
+          prompt: md.content.trim(),
         }
-        continue
-      }
-    }
+        const parsed = Agent.safeParse(config)
+        if (parsed.success) {
+          result[config.name] = {
+            ...parsed.data,
+            mode: "primary" as const,
+          }
+          return
+        }
+      }),
+    )
     return result
   }
 
