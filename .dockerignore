@@ -1,0 +1,13 @@
+.git
+.opencode
+**/node_modules
+*.log
+.DS_Store
+.turbo
+.next
+dist
+*.tgz
+packages/desktop/src-tauri/target
+packages/desktop-electron/out
+packages/storybook/storybook-static
+packages/containers

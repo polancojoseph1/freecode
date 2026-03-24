@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 RUN git config --global user.email "bot@test.ai" \
     && git config --global user.name "testbot"
 
-# Copy full project first (monorepo workspaces need all package.json files)
+# Copy full project (monorepo workspaces need all package.json files)
 COPY . .
 
 # Install dependencies
@@ -32,5 +32,5 @@ ENV OPENROUTER_API_KEY=$OPENROUTER_API_KEY
 ARG FREECODE_INTEGRATION
 ENV FREECODE_INTEGRATION=$FREECODE_INTEGRATION
 
-# Run tests
-CMD ["bun", "--cwd", "packages/opencode", "test", "--timeout", "30000"]
+# Run tests (120s timeout to support integration tests hitting live AI providers)
+CMD ["bun", "--cwd", "packages/opencode", "test", "--timeout", "120000"]

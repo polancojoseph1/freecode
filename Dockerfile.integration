@@ -1,0 +1,9 @@
+FROM freecode-test-integration:latest
+
+# Update test files with latest changes (avoids full bun install)
+COPY packages/opencode/test/preload.ts /app/packages/opencode/test/preload.ts
+COPY packages/opencode/test/session/structured-output-integration.test.ts /app/packages/opencode/test/session/structured-output-integration.test.ts
+COPY Dockerfile.test /app/Dockerfile.test
+
+# Run integration tests with 120s timeout
+CMD ["bun", "--cwd", "packages/opencode", "test", "--timeout", "120000", "test/session/structured-output-integration.test.ts"]
