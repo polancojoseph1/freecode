@@ -9,8 +9,13 @@ import { MessageV2 } from "../../src/session/message-v2"
 const projectRoot = path.join(__dirname, "../..")
 Log.init({ print: false })
 
-// Skip tests if no API key is available
-const hasApiKey = !!process.env.ANTHROPIC_API_KEY
+// Skip tests if no API key is available (Anthropic or OpenRouter)
+const hasApiKey = !!process.env.ANTHROPIC_API_KEY || !!process.env.OPENROUTER_API_KEY
+
+// Use OpenRouter as fallback model when Anthropic key is not available
+const testModel = !process.env.ANTHROPIC_API_KEY && process.env.OPENROUTER_API_KEY
+  ? { providerID: "openrouter" as const, modelID: "meta-llama/llama-3.3-70b-instruct:free" }
+  : undefined
 
 // Helper to run test within Instance context
 async function withInstance<T>(fn: () => Promise<T>): Promise<T> {
@@ -29,6 +34,7 @@ describe("StructuredOutput Integration", () => {
 
         const result = await SessionPrompt.prompt({
           sessionID: session.id,
+          model: testModel,
           parts: [
             {
               type: "text",
@@ -77,6 +83,7 @@ describe("StructuredOutput Integration", () => {
 
         const result = await SessionPrompt.prompt({
           sessionID: session.id,
+          model: testModel,
           parts: [
             {
               type: "text",
@@ -140,6 +147,7 @@ describe("StructuredOutput Integration", () => {
 
         const result = await SessionPrompt.prompt({
           sessionID: session.id,
+          model: testModel,
           parts: [
             {
               type: "text",
@@ -176,6 +184,7 @@ describe("StructuredOutput Integration", () => {
 
         await SessionPrompt.prompt({
           sessionID: session.id,
+          model: testModel,
           parts: [
             {
               type: "text",

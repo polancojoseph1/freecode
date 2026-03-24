@@ -51,27 +51,30 @@ await fs.mkdir(cacheDir, { recursive: true })
 await fs.writeFile(path.join(cacheDir, "version"), "14")
 
 // Clear provider and server auth env vars to ensure clean test state
-delete process.env["ANTHROPIC_API_KEY"]
-delete process.env["OPENAI_API_KEY"]
-delete process.env["GOOGLE_API_KEY"]
-delete process.env["GOOGLE_GENERATIVE_AI_API_KEY"]
-delete process.env["AZURE_OPENAI_API_KEY"]
-delete process.env["AWS_ACCESS_KEY_ID"]
-delete process.env["AWS_PROFILE"]
-delete process.env["AWS_REGION"]
-delete process.env["AWS_BEARER_TOKEN_BEDROCK"]
-delete process.env["OPENROUTER_API_KEY"]
-delete process.env["GROQ_API_KEY"]
-delete process.env["MISTRAL_API_KEY"]
-delete process.env["PERPLEXITY_API_KEY"]
-delete process.env["TOGETHER_API_KEY"]
-delete process.env["XAI_API_KEY"]
-delete process.env["DEEPSEEK_API_KEY"]
-delete process.env["FIREWORKS_API_KEY"]
-delete process.env["CEREBRAS_API_KEY"]
-delete process.env["SAMBANOVA_API_KEY"]
-delete process.env["FREECODE_SERVER_PASSWORD"]
-delete process.env["FREECODE_SERVER_USERNAME"]
+// Set FREECODE_INTEGRATION=1 to preserve provider keys for integration tests
+if (!process.env["FREECODE_INTEGRATION"]) {
+  delete process.env["ANTHROPIC_API_KEY"]
+  delete process.env["OPENAI_API_KEY"]
+  delete process.env["GOOGLE_API_KEY"]
+  delete process.env["GOOGLE_GENERATIVE_AI_API_KEY"]
+  delete process.env["AZURE_OPENAI_API_KEY"]
+  delete process.env["AWS_ACCESS_KEY_ID"]
+  delete process.env["AWS_PROFILE"]
+  delete process.env["AWS_REGION"]
+  delete process.env["AWS_BEARER_TOKEN_BEDROCK"]
+  delete process.env["OPENROUTER_API_KEY"]
+  delete process.env["GROQ_API_KEY"]
+  delete process.env["MISTRAL_API_KEY"]
+  delete process.env["PERPLEXITY_API_KEY"]
+  delete process.env["TOGETHER_API_KEY"]
+  delete process.env["XAI_API_KEY"]
+  delete process.env["DEEPSEEK_API_KEY"]
+  delete process.env["FIREWORKS_API_KEY"]
+  delete process.env["CEREBRAS_API_KEY"]
+  delete process.env["SAMBANOVA_API_KEY"]
+  delete process.env["FREECODE_SERVER_PASSWORD"]
+  delete process.env["FREECODE_SERVER_USERNAME"]
+}
 
 // Now safe to import from src/
 const { Log } = await import("../src/util/log")
