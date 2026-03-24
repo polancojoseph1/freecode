@@ -448,19 +448,24 @@ export namespace File {
 
     if (untrackedOutput.trim()) {
       const untrackedFiles = untrackedOutput.trim().split("\n")
-      for (const filepath of untrackedFiles) {
-        try {
-          const content = await Filesystem.readText(path.join(Instance.directory, filepath))
-          const lines = content.split("\n").length
-          changedFiles.push({
-            path: filepath,
-            added: lines,
-            removed: 0,
-            status: "added",
-          })
-        } catch {
-          continue
-        }
+      const results = await Promise.all(
+        untrackedFiles.map(async (filepath) => {
+          try {
+            const content = await Filesystem.readText(path.join(Instance.directory, filepath))
+            const lines = content.split("\n").length
+            return {
+              path: filepath,
+              added: lines,
+              removed: 0,
+              status: "added",
+            } as Info
+          } catch {
+            return undefined
+          }
+        }),
+      )
+      for (const result of results) {
+        if (result) changedFiles.push(result)
       }
     }
 
