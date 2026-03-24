@@ -21,6 +21,7 @@ import { CommandProvider, useCommandDialog } from "@tui/component/dialog-command
 import { DialogAgent } from "@tui/component/dialog-agent"
 import { DialogSessionList } from "@tui/component/dialog-session-list"
 import { DialogWorkspaceList } from "@tui/component/dialog-workspace-list"
+import { DialogPermissionList } from "@tui/component/dialog-permission-list"
 import { KeybindProvider } from "@tui/context/keybind"
 import { ThemeProvider, useTheme } from "@tui/context/theme"
 import { Home } from "@tui/routes/home"
@@ -463,6 +464,17 @@ function App() {
       hidden: true,
       onSelect: () => {
         local.model.cycleFavorite(-1)
+      },
+    },
+    {
+      title: "Manage permissions",
+      value: "permission.list_ruleset",
+      category: "System",
+      slash: {
+        name: "permissions",
+      },
+      onSelect: () => {
+        dialog.replace(() => <DialogPermissionList />)
       },
     },
     {

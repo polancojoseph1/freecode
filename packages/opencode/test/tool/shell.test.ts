@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import os from "os"
 import path from "path"
-import { BashTool } from "../../src/tool/bash"
+import { ShellTool } from "../../src/tool/shell"
 import { Instance } from "../../src/project/instance"
 import { Filesystem } from "../../src/util/filesystem"
 import { tmpdir } from "../fixture/fixture"
@@ -27,8 +27,8 @@ describe("tool.bash", () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
-        const bash = await BashTool.init()
-        const result = await bash.execute(
+        const shell = await ShellTool.init()
+        const result = await shell.execute(
           {
             command: "echo 'test'",
             description: "Echo test message",
@@ -48,7 +48,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -56,7 +56,7 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute(
+        await shell.execute(
           {
             command: "echo hello",
             description: "Echo hello",
@@ -64,7 +64,7 @@ describe("tool.bash permissions", () => {
           testCtx,
         )
         expect(requests.length).toBe(1)
-        expect(requests[0].permission).toBe("bash")
+        expect(requests[0].permission).toBe("shell")
         expect(requests[0].patterns).toContain("echo hello")
       },
     })
@@ -75,7 +75,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -83,7 +83,7 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute(
+        await shell.execute(
           {
             command: "echo foo && echo bar",
             description: "Echo twice",
@@ -91,7 +91,7 @@ describe("tool.bash permissions", () => {
           testCtx,
         )
         expect(requests.length).toBe(1)
-        expect(requests[0].permission).toBe("bash")
+        expect(requests[0].permission).toBe("shell")
         expect(requests[0].patterns).toContain("echo foo")
         expect(requests[0].patterns).toContain("echo bar")
       },
@@ -103,7 +103,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -111,7 +111,7 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute(
+        await shell.execute(
           {
             command: "cd ../",
             description: "Change to parent directory",
@@ -129,7 +129,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -137,7 +137,7 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute(
+        await shell.execute(
           {
             command: "ls",
             workdir: os.tmpdir(),
@@ -162,7 +162,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -171,7 +171,7 @@ describe("tool.bash permissions", () => {
           },
         }
         const filepath = path.join(outerTmp.path, "outside.txt")
-        await bash.execute(
+        await shell.execute(
           {
             command: `cat ${filepath}`,
             description: "Read external file",
@@ -192,7 +192,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -203,7 +203,7 @@ describe("tool.bash permissions", () => {
 
         await Bun.write(path.join(tmp.path, "tmpfile"), "x")
 
-        await bash.execute(
+        await shell.execute(
           {
             command: `rm -rf ${path.join(tmp.path, "nested")}`,
             description: "remove nested dir",
@@ -222,7 +222,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -230,7 +230,7 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute(
+        await shell.execute(
           {
             command: "git log --oneline -5",
             description: "Git log",
@@ -249,7 +249,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -257,15 +257,15 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute(
+        await shell.execute(
           {
             command: "cd .",
             description: "Stay in current directory",
           },
           testCtx,
         )
-        const bashReq = requests.find((r) => r.permission === "bash")
-        expect(bashReq).toBeUndefined()
+        const shellReq = requests.find((r) => r.permission === "shell")
+        expect(shellReq).toBeUndefined()
       },
     })
   })
@@ -275,7 +275,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -283,10 +283,10 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute({ command: "cat > /tmp/output.txt", description: "Redirect ls output" }, testCtx)
-        const bashReq = requests.find((r) => r.permission === "bash")
-        expect(bashReq).toBeDefined()
-        expect(bashReq!.patterns).toContain("cat > /tmp/output.txt")
+        await shell.execute({ command: "cat > /tmp/output.txt", description: "Redirect ls output" }, testCtx)
+        const shellReq = requests.find((r) => r.permission === "shell")
+        expect(shellReq).toBeDefined()
+        expect(shellReq!.patterns).toContain("cat > /tmp/output.txt")
       },
     })
   })
@@ -296,7 +296,7 @@ describe("tool.bash permissions", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
         const testCtx = {
           ...ctx,
@@ -304,10 +304,10 @@ describe("tool.bash permissions", () => {
             requests.push(req)
           },
         }
-        await bash.execute({ command: "ls -la", description: "List" }, testCtx)
-        const bashReq = requests.find((r) => r.permission === "bash")
-        expect(bashReq).toBeDefined()
-        const pattern = bashReq!.always[0]
+        await shell.execute({ command: "ls -la", description: "List" }, testCtx)
+        const shellReq = requests.find((r) => r.permission === "shell")
+        expect(shellReq).toBeDefined()
+        const pattern = shellReq!.always[0]
         expect(pattern).toBe("ls *")
       },
     })
@@ -319,9 +319,9 @@ describe("tool.bash truncation", () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const lineCount = Truncate.MAX_LINES + 500
-        const result = await bash.execute(
+        const result = await shell.execute(
           {
             command: `seq 1 ${lineCount}`,
             description: "Generate lines exceeding limit",
@@ -339,9 +339,9 @@ describe("tool.bash truncation", () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const byteCount = Truncate.MAX_BYTES + 10000
-        const result = await bash.execute(
+        const result = await shell.execute(
           {
             command: `head -c ${byteCount} /dev/zero | tr '\\0' 'a'`,
             description: "Generate bytes exceeding limit",
@@ -359,8 +359,8 @@ describe("tool.bash truncation", () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
-        const bash = await BashTool.init()
-        const result = await bash.execute(
+        const shell = await ShellTool.init()
+        const result = await shell.execute(
           {
             command: "echo hello",
             description: "Echo hello",
@@ -378,9 +378,9 @@ describe("tool.bash truncation", () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
-        const bash = await BashTool.init()
+        const shell = await ShellTool.init()
         const lineCount = Truncate.MAX_LINES + 100
-        const result = await bash.execute(
+        const result = await shell.execute(
           {
             command: `seq 1 ${lineCount}`,
             description: "Generate lines for file check",
