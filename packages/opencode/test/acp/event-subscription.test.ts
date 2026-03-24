@@ -493,7 +493,7 @@ describe("acp.agent event subscription", () => {
     })
   })
 
-  test("streams running bash output snapshots and de-dupes identical snapshots", async () => {
+  test("streams running shell output snapshots and de-dupes identical snapshots", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
@@ -631,7 +631,7 @@ describe("acp.agent event subscription", () => {
     })
   })
 
-  test("clears bash snapshot marker on pending state", async () => {
+  test("clears shell snapshot marker on pending state", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,

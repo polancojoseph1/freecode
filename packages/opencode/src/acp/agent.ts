@@ -281,7 +281,7 @@ export namespace ACP {
                 return
 
               case "running":
-                const output = this.bashOutput(part)
+                const output = this.shellOutput(part)
                 const content: ToolCallContent[] = []
                 if (output) {
                   const hash = Hash.fast(output)
@@ -820,7 +820,7 @@ export namespace ACP {
               this.shellSnapshots.delete(part.callID)
               break
             case "running":
-              const output = this.bashOutput(part)
+              const output = this.shellOutput(part)
               const runningContent: ToolCallContent[] = []
               if (output) {
                 runningContent.push({
@@ -1080,8 +1080,8 @@ export namespace ACP {
       }
     }
 
-    private bashOutput(part: ToolPart) {
-      if (part.tool !== "bash") return
+    private shellOutput(part: ToolPart) {
+      if (part.tool !== "shell") return
       if (!("metadata" in part.state) || !part.state.metadata || typeof part.state.metadata !== "object") return
       const output = part.state.metadata["output"]
       if (typeof output !== "string") return
