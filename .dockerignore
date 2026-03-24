@@ -1,0 +1,5 @@
+.git
+.opencode
+node_modules
+*.log
+.DS_Store
