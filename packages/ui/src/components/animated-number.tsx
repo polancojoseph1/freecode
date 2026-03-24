@@ -1,5 +1,4 @@
-import { For, Index, createEffect, createMemo, on } from "solid-js"
-import { createStore } from "solid-js/store"
+import { For, Index, createEffect, createMemo, on, createSignal } from "solid-js"
 
 const TRACK = Array.from({ length: 30 }, (_, index) => index % 10)
 const DURATION = 600
@@ -15,12 +14,10 @@ function spin(from: number, to: number, direction: 1 | -1) {
 }
 
 function Digit(props: { value: number; direction: 1 | -1 }) {
-  const [state, setState] = createStore({
-    step: props.value + 10,
-    animating: false,
-  })
-  const step = () => state.step
-  const animating = () => state.animating
+  // ⚡ Bolt Optimization: createSignal is significantly faster than createStore for primitive values
+  // since it avoids the proxy overhead. Used here for rapid animation ticks.
+  const [step, setStep] = createSignal(props.value + 10)
+  const [animating, setAnimating] = createSignal(false)
   let last = props.value
 
   createEffect(
@@ -30,13 +27,13 @@ function Digit(props: { value: number; direction: 1 | -1 }) {
         const delta = spin(last, next, props.direction)
         last = next
         if (!delta) {
-          setState("animating", false)
-          setState("step", next + 10)
+          setAnimating(false)
+          setStep(next + 10)
           return
         }
 
-        setState("animating", true)
-        setState("step", (value) => value + delta)
+        setAnimating(true)
+        setStep((value) => value + delta)
       },
       { defer: true },
     ),
@@ -48,8 +45,8 @@ function Digit(props: { value: number; direction: 1 | -1 }) {
         data-slot="animated-number-strip"
         data-animating={animating() ? "true" : "false"}
         onTransitionEnd={() => {
-          setState("animating", false)
-          setState("step", (value) => normalize(value) + 10)
+          setAnimating(false)
+          setStep((value) => normalize(value) + 10)
         }}
         style={{
           "--animated-number-offset": `${step()}`,
@@ -68,12 +65,10 @@ export function AnimatedNumber(props: { value: number; class?: string }) {
     return Math.max(0, Math.round(props.value))
   })
 
-  const [state, setState] = createStore({
-    value: target(),
-    direction: 1 as 1 | -1,
-  })
-  const value = () => state.value
-  const direction = () => state.direction
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  // avoids unnecessary proxy overhead during frequent updates.
+  const [value, setValue] = createSignal(target())
+  const [direction, setDirection] = createSignal<1 | -1>(1)
 
   createEffect(
     on(
@@ -82,8 +77,8 @@ export function AnimatedNumber(props: { value: number; class?: string }) {
         const current = value()
         if (next === current) return
 
-        setState("direction", next > current ? 1 : -1)
-        setState("value", next)
+        setDirection(next > current ? 1 : -1)
+        setValue(next)
       },
       { defer: true },
     ),
