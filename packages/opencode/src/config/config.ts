@@ -122,8 +122,10 @@ export namespace Config {
 
     // Project config overrides global and remote config.
     if (!Flag.FREECODE_DISABLE_PROJECT_CONFIG) {
-      for (const file of await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)) {
-        result = mergeConfigConcatArrays(result, await loadFile(file))
+      const files = await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)
+      const contents = await Promise.all(files.map((file) => loadFile(file)))
+      for (const fileConfig of contents) {
+        result = mergeConfigConcatArrays(result, fileConfig)
       }
     }
 
