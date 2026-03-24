@@ -194,6 +194,11 @@ export namespace Provider {
           if (useLanguageModel(sdk)) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
         },
+        vars(options) {
+          return {
+            COPILOT_BASE_URL: options.copilotBaseUrl ?? "https://api.githubcopilot.com",
+          }
+        },
         options: {},
       }
     },
@@ -203,6 +208,11 @@ export namespace Provider {
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
           if (useLanguageModel(sdk)) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
+        },
+        vars(options) {
+          return {
+            COPILOT_BASE_URL: options.copilotBaseUrl ?? "https://api.githubcopilot.com",
+          }
         },
         options: {},
       }
@@ -866,6 +876,13 @@ export namespace Provider {
     // Add GitHub Copilot Enterprise provider that inherits from GitHub Copilot
     if (database["github-copilot"]) {
       const githubCopilot = database["github-copilot"]
+
+      for (const model of Object.values(githubCopilot.models)) {
+        const isClaude = model.id.includes("claude")
+        model.api.url = isClaude ? "${COPILOT_BASE_URL}/v1" : "${COPILOT_BASE_URL}"
+        model.api.npm = "@ai-sdk/github-copilot"
+      }
+
       database["github-copilot-enterprise"] = {
         ...githubCopilot,
         id: ProviderID.githubCopilotEnterprise,
