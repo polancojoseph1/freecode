@@ -75,7 +75,7 @@ export namespace Server {
           status: 500,
         })
       })
-      .use((c, next) => {
+      .use(async (c, next) => {
         // Allow CORS preflight requests to succeed without auth.
         // Browser clients sending Authorization headers will preflight with OPTIONS.
         if (c.req.method === "OPTIONS") return next()
