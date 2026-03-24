@@ -298,8 +298,8 @@ export namespace ProviderTransform {
     if (id.includes("glm-4.7")) return 1.0
     if (id.includes("minimax-m2")) return 1.0
     if (id.includes("kimi-k2")) {
-      // kimi-k2-thinking & kimi-k2.5 && kimi-k2p5 && kimi-k2-5
-      if (["thinking", "k2.", "k2p", "k2-5"].some((s) => id.includes(s))) {
+      // kimi-k2-thinking & kimi-k2.5 & kimi-k2-5
+      if (["thinking", "k2.", "k2-5"].some((s) => id.includes(s))) {
         return 1.0
       }
       return 0.6
@@ -310,7 +310,7 @@ export namespace ProviderTransform {
   export function topP(model: Provider.Model) {
     const id = model.id.toLowerCase()
     if (id.includes("qwen")) return 1
-    if (["minimax-m2", "gemini", "kimi-k2.5", "kimi-k2p5", "kimi-k2-5"].some((s) => id.includes(s))) {
+    if (["minimax-m2", "gemini", "kimi-k2.5", "kimi-k2-5"].some((s) => id.includes(s))) {
       return 0.95
     }
     return undefined
@@ -342,9 +342,7 @@ export namespace ProviderTransform {
       id.includes("minimax") ||
       id.includes("glm") ||
       id.includes("mistral") ||
-      id.includes("kimi") ||
-      // TODO: Remove this after models.dev data is fixed to use "kimi-k2.5" instead of "k2p5"
-      id.includes("k2p5")
+      id.includes("kimi")
     )
       return {}
 
@@ -763,11 +761,11 @@ export namespace ProviderTransform {
       }
     }
 
-    // Enable thinking by default for kimi-k2.5/k2p5 models using anthropic SDK
+    // Enable thinking by default for kimi-k2.5 models using anthropic SDK
     const modelId = input.model.api.id.toLowerCase()
     if (
       (input.model.api.npm === "@ai-sdk/anthropic" || input.model.api.npm === "@ai-sdk/google-vertex/anthropic") &&
-      (modelId.includes("k2p5") || modelId.includes("kimi-k2.5") || modelId.includes("kimi-k2p5"))
+      modelId.includes("kimi-k2.5")
     ) {
       result["thinking"] = {
         type: "enabled",
