@@ -74,6 +74,12 @@ export namespace PermissionNext {
     return runPromise((service) => service.list())
   }
 
+  export async function listRuleset() {
+    return runPromise((service) => service.listRuleset())
+  }
+
+  export const deleteRule = fn(S.DeleteRuleInput, async (input) => runPromise((service) => service.deleteRule(input)))
+
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     return S.evaluate(permission, pattern, ...rulesets)
   }

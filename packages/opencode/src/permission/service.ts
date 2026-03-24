@@ -119,11 +119,15 @@ export const ReplyInput = z.object({
   message: z.string().optional(),
 })
 
+export const DeleteRuleInput = Rule
+
 export declare namespace PermissionService {
   export interface Api {
     readonly ask: (input: z.infer<typeof AskInput>) => Effect.Effect<void, PermissionError>
     readonly reply: (input: z.infer<typeof ReplyInput>) => Effect.Effect<void>
     readonly list: () => Effect.Effect<Request[]>
+    readonly listRuleset: () => Effect.Effect<Ruleset>
+    readonly deleteRule: (input: z.infer<typeof DeleteRuleInput>) => Effect.Effect<void>
   }
 }
 
@@ -239,10 +243,13 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
           yield* Deferred.succeed(item.deferred, undefined)
         }
 
-        // TODO: we don't save the permission ruleset to disk yet until there's
-        // UI to manage it
-        // db().insert(PermissionTable).values({ projectID: Instance.project.id, data: s.approved })
-        //   .onConflictDoUpdate({ target: PermissionTable.projectID, set: { data: s.approved } }).run()
+        Database.use((db) =>
+          db
+            .insert(PermissionTable)
+            .values({ project_id: Instance.project.id, data: state.approved })
+            .onConflictDoUpdate({ target: PermissionTable.project_id, set: { data: state.approved } })
+            .run(),
+        )
       })
 
       const list = Effect.fn("PermissionService.list")(function* () {
@@ -250,7 +257,29 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
         return Array.from(state.pending.values(), (item) => item.info)
       })
 
-      return PermissionService.of({ ask, reply, list })
+      const listRuleset = Effect.fn("PermissionService.listRuleset")(function* () {
+        const state = yield* InstanceState.get(instanceState)
+        return state.approved
+      })
+
+      const deleteRule = Effect.fn("PermissionService.deleteRule")(function* (input: z.infer<typeof DeleteRuleInput>) {
+        const state = yield* InstanceState.get(instanceState)
+        const next = state.approved.filter(
+          (rule) =>
+            rule.permission !== input.permission || rule.pattern !== input.pattern || rule.action !== input.action,
+        )
+        state.approved = next
+
+        Database.use((db) =>
+          db
+            .insert(PermissionTable)
+            .values({ project_id: Instance.project.id, data: state.approved })
+            .onConflictDoUpdate({ target: PermissionTable.project_id, set: { data: state.approved } })
+            .run(),
+        )
+      })
+
+      return PermissionService.of({ ask, reply, list, listRuleset, deleteRule })
     }),
   )
 }
