@@ -317,7 +317,6 @@ export class AccountService extends ServiceMap.Service<AccountService, AccountSe
 
         const [account, remoteOrgs] = yield* Effect.all([user, orgs], { concurrency: 2 })
 
-        // TODO: When there are multiple orgs, let the user choose
         const firstOrgID = remoteOrgs.length > 0 ? Option.some(remoteOrgs[0].id) : Option.none<OrgID>()
 
         const now = yield* Clock.currentTimeMillis
@@ -334,7 +333,11 @@ export class AccountService extends ServiceMap.Service<AccountService, AccountSe
           orgID: firstOrgID,
         })
 
-        return new PollSuccess({ email: account.email })
+        return new PollSuccess({
+          email: account.email,
+          accountID: account.id,
+          orgs: Array.from(remoteOrgs),
+        })
       })
 
       return AccountService.of({
