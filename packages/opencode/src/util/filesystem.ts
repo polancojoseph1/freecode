@@ -144,15 +144,16 @@ export namespace Filesystem {
     )
   }
   export function overlaps(a: string, b: string) {
-    const relA = relative(a, b)
-    const relB = relative(b, a)
-    return !relA || !relA.startsWith("..") || !relB || !relB.startsWith("..")
+    return contains(a, b) || contains(b, a)
   }
 
   export function contains(parent: string, child: string) {
     const p = resolve(parent)
     const c = resolve(child)
     const rel = relative(p, c)
+    // On Windows, relative paths between different drives return an absolute path.
+    // E.g., relative('C:\\foo', 'D:\\bar') returns 'D:\\bar'.
+    // Since it doesn't start with '..', it would bypass the containment check if we only checked startsWith('..').
     return !rel.startsWith("..") && !isAbsolute(rel)
   }
 
