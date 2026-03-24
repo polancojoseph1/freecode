@@ -203,7 +203,12 @@ describe("tool.read truncation", () => {
       init: async (dir) => {
         const base = await Filesystem.readText(path.join(FIXTURES_DIR, "models-api.json"))
         const target = 60 * 1024
-        const content = base.length >= target ? base : base.repeat(Math.ceil(target / base.length))
+        let content = base
+        while (Buffer.byteLength(content, "utf-8") < target) {
+          content += base
+        }
+        // Force the content to be more than exactly the MAX_BYTES to ensure it always truncates, and separated by newlines since read truncates line-by-line
+        content += "\n" + "x\n".repeat(50 * 1024)
         await Filesystem.write(path.join(dir, "large.json"), content)
       },
     })
@@ -211,7 +216,7 @@ describe("tool.read truncation", () => {
       directory: tmp.path,
       fn: async () => {
         const read = await ReadTool.init()
-        const result = await read.execute({ filePath: path.join(tmp.path, "large.json") }, ctx)
+        const result = await read.execute({ filePath: path.join(tmp.path, "large.json"), limit: 1000000 }, ctx)
         expect(result.metadata.truncated).toBe(true)
         expect(result.output).toContain("Output capped at")
         expect(result.output).toContain("Use offset=")
