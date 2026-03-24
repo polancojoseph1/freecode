@@ -75,13 +75,13 @@ export namespace Server {
           status: 500,
         })
       })
-      .use((c, next) => {
+      .use(async (c, next) => {
         // Allow CORS preflight requests to succeed without auth.
         // Browser clients sending Authorization headers will preflight with OPTIONS.
         if (c.req.method === "OPTIONS") return next()
         const password = Flag.FREECODE_SERVER_PASSWORD
         if (!password) {
-          return c.json({ error: "Unauthorized: FREECODE_SERVER_PASSWORD is not set" }, 401)
+          return c.json({ error: "Unauthorized: FREECODE_SERVER_PASSWORD is not set" }, 401) as any
         }
         const username = Flag.FREECODE_SERVER_USERNAME ?? "freecode"
         return basicAuth({ username, password })(c, next)
