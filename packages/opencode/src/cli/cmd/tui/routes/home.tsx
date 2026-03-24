@@ -1,5 +1,5 @@
 import { Prompt, type PromptRef } from "@tui/component/prompt"
-import { createEffect, createMemo, Match, on, onMount, Show, Switch } from "solid-js"
+import { createEffect, createMemo, createSignal, Match, on, onMount, Show, Switch } from "solid-js"
 import { useTheme } from "@tui/context/theme"
 import { useKeybind } from "@tui/context/keybind"
 import { Logo } from "../component/logo"
@@ -16,8 +16,9 @@ import { useKV } from "../context/kv"
 import { useCommandDialog } from "../component/dialog-command"
 import { useLocal } from "../context/local"
 
-// TODO: what is the best way to do this?
-let once = false
+// Used to prevent CLI --prompt or route-initial prompts from being applied
+// multiple times when navigating between routes
+const [initialized, setInitialized] = createSignal(false)
 
 export function Home() {
   const sync = useSync()
@@ -79,13 +80,13 @@ export function Home() {
   const args = useArgs()
   const local = useLocal()
   onMount(() => {
-    if (once) return
+    if (initialized()) return
     if (route.initialPrompt) {
       prompt.set(route.initialPrompt)
-      once = true
+      setInitialized(true)
     } else if (args.prompt) {
       prompt.set({ input: args.prompt, parts: [] })
-      once = true
+      setInitialized(true)
     }
   })
 
