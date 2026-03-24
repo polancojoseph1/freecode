@@ -239,10 +239,12 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
           yield* Deferred.succeed(item.deferred, undefined)
         }
 
-        // TODO: we don't save the permission ruleset to disk yet until there's
-        // UI to manage it
-        // db().insert(PermissionTable).values({ projectID: Instance.project.id, data: s.approved })
-        //   .onConflictDoUpdate({ target: PermissionTable.projectID, set: { data: s.approved } }).run()
+        Database.use((db) => {
+          db.insert(PermissionTable)
+            .values({ project_id: Instance.project.id, data: state.approved })
+            .onConflictDoUpdate({ target: PermissionTable.project_id, set: { data: state.approved } })
+            .run()
+        })
       })
 
       const list = Effect.fn("PermissionService.list")(function* () {
