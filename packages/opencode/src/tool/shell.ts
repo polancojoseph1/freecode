@@ -2,7 +2,7 @@ import z from "zod"
 import { spawn } from "child_process"
 import { Tool } from "./tool"
 import path from "path"
-import DESCRIPTION from "./bash.txt"
+import DESCRIPTION from "./shell.txt"
 import { Log } from "../util/log"
 import { Instance } from "../project/instance"
 import { lazy } from "@/util/lazy"
@@ -21,7 +21,7 @@ import { Plugin } from "@/plugin"
 const MAX_METADATA_LENGTH = 30_000
 const DEFAULT_TIMEOUT = Flag.FREECODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS || 2 * 60 * 1000
 
-export const log = Log.create({ service: "bash-tool" })
+export const log = Log.create({ service: "shell-tool" })
 
 const resolveWasm = (asset: string) => {
   if (asset.startsWith("file://")) return fileURLToPath(asset)
@@ -52,9 +52,9 @@ const parser = lazy(async () => {
 })
 
 // TODO: we may wanna rename this tool so it works better on other shells
-export const BashTool = Tool.define("bash", async () => {
+export const ShellTool = Tool.define("shell", async () => {
   const shell = Shell.acceptable()
-  log.info("bash tool using shell", { shell })
+  log.info("shell tool using shell", { shell })
 
   return {
     description: DESCRIPTION.replaceAll("${directory}", Instance.directory)
@@ -152,7 +152,7 @@ export const BashTool = Tool.define("bash", async () => {
 
       if (patterns.size > 0) {
         await ctx.ask({
-          permission: "bash",
+          permission: "shell",
           patterns: Array.from(patterns),
           always: Array.from(always),
           metadata: {},
@@ -245,7 +245,7 @@ export const BashTool = Tool.define("bash", async () => {
       const resultMetadata: string[] = []
 
       if (timedOut) {
-        resultMetadata.push(`bash tool terminated command after exceeding timeout ${timeout} ms`)
+        resultMetadata.push(`shell tool terminated command after exceeding timeout ${timeout} ms`)
       }
 
       if (aborted) {
@@ -253,7 +253,7 @@ export const BashTool = Tool.define("bash", async () => {
       }
 
       if (resultMetadata.length > 0) {
-        output += "\n\n<bash_metadata>\n" + resultMetadata.join("\n") + "\n</bash_metadata>"
+        output += "\n\n<shell_metadata>\n" + resultMetadata.join("\n") + "\n</shell_metadata>"
       }
 
       return {
