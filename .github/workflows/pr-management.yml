@@ -20,9 +20,12 @@ jobs:
         id: team-check
         run: |
           LOGIN="${{ github.event.pull_request.user.login }}"
-          if [ "$LOGIN" = "opencode-agent[bot]" ] || grep -qxF "$LOGIN" .github/TEAM_MEMBERS; then
+          if [ "$LOGIN" = "opencode-agent[bot]" ]; then
             echo "is_team=true" >> "$GITHUB_OUTPUT"
-            echo "Skipping: $LOGIN is a team member or bot"
+            echo "Skipping: $LOGIN is a bot"
+          elif curl -s https://raw.githubusercontent.com/${{ github.repository }}/main/.github/TEAM_MEMBERS | grep -qxF "$LOGIN"; then
+            echo "is_team=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping: $LOGIN is a team member"
           else
             echo "is_team=false" >> "$GITHUB_OUTPUT"
           fi

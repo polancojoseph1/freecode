@@ -1,0 +1,74 @@
+name: Jules CI
+
+# Jules-compatible CI workflow.
+# Uses ubuntu-latest (standard GitHub-hosted runners, no blacksmith required).
+# Runs unit tests only — no e2e, no Windows matrix, no real API keys needed.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Disable share feature so tests don't try to reach external services
+  OPENCODE_DISABLE_SHARE: "true"
+  # Stub base URL so any provider code that reads it doesn't fail on missing value
+  OPENAI_BASE_URL: "http://localhost:9999/v1"
+  CI: "true"
+
+jobs:
+  unit-opencode:
+    name: Unit tests (opencode)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "bot@opencode.ai"
+          git config --global user.name "opencode"
+
+      - name: Run opencode unit tests
+        working-directory: packages/opencode
+        run: bun test --timeout 30000
+
+  unit-app:
+    name: Unit tests (app)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Build SDK dependency
+        run: bun --cwd packages/sdk/js ./script/build.ts
+
+      - name: Run app unit tests
+        working-directory: packages/app
+        run: bun run test:unit
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Run typecheck
+        run: bun typecheck
