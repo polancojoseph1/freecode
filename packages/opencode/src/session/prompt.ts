@@ -406,6 +406,7 @@ export namespace SessionPrompt {
           description: task.description,
           subagent_type: task.agent,
           command: task.command,
+          parts: task.parts,
         }
 
         let executionError: Error | undefined
@@ -1778,8 +1779,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               providerID: taskModel.providerID,
               modelID: taskModel.modelID,
             },
-            // TODO: how can we make task tool accept a more complex input?
             prompt: templateParts.find((y) => y.type === "text")?.text ?? "",
+            parts: [...templateParts, ...(input.parts ?? [])],
           },
         ]
       : [...templateParts, ...(input.parts ?? [])]
