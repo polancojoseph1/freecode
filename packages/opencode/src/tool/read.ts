@@ -170,16 +170,16 @@ export const ReadTool = Tool.define("read", {
           continue
         }
 
-        const line = text.length > MAX_LINE_LENGTH ? text.substring(0, MAX_LINE_LENGTH) + MAX_LINE_SUFFIX : text
-        const size = Buffer.byteLength(line, "utf-8") + (raw.length > 0 ? 1 : 0)
-        if (bytes + size > MAX_BYTES) {
+        const originalSize = Buffer.byteLength(text, "utf-8") + (raw.length > 0 ? 1 : 0)
+        if (bytes + originalSize > MAX_BYTES) {
           truncatedByBytes = true
           hasMoreLines = true
           break
         }
 
+        const line = text.length > MAX_LINE_LENGTH ? text.substring(0, MAX_LINE_LENGTH) + MAX_LINE_SUFFIX : text
         raw.push(line)
-        bytes += size
+        bytes += originalSize
       }
     } finally {
       rl.close()
