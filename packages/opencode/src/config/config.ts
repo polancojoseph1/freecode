@@ -138,31 +138,72 @@ export namespace Config {
       log.debug("loading config from FREECODE_CONFIG_DIR", { path: Flag.FREECODE_CONFIG_DIR })
     }
 
-    const deps = []
+    const deps: Promise<void>[] = []
 
-    for (const dir of unique(directories)) {
+    const dirLoadPromises = unique(directories).map(async (dir) => {
+      let jsonc: Info = {}
+      let json: Info = {}
+
       if (dir.endsWith(".freecode") || dir === Flag.FREECODE_CONFIG_DIR) {
-        for (const file of ["freecode.jsonc", "freecode.json"]) {
-          log.debug(`loading config from ${path.join(dir, file)}`)
-          result = mergeConfigConcatArrays(result, await loadFile(path.join(dir, file)))
-          // to satisfy the type checker
-          result.agent ??= {}
-          result.mode ??= {}
-          result.plugin ??= []
-        }
+        const jsoncPath = path.join(dir, "freecode.jsonc")
+        const jsonPath = path.join(dir, "freecode.json")
+        log.debug(`loading config from ${jsoncPath}`)
+        const jsoncPromise = loadFile(jsoncPath)
+        log.debug(`loading config from ${jsonPath}`)
+        const jsonPromise = loadFile(jsonPath)
+
+        jsonc = await jsoncPromise
+        json = await jsonPromise
       }
 
+      // Start evaluating needsInstall concurrently
+      const shouldInstallPromise = needsInstall(dir)
       deps.push(
         iife(async () => {
-          const shouldInstall = await needsInstall(dir)
+          const shouldInstall = await shouldInstallPromise
           if (shouldInstall) await installDependencies(dir)
         }),
       )
 
-      result.command = mergeDeep(result.command ?? {}, await loadCommand(dir))
-      result.agent = mergeDeep(result.agent, await loadAgent(dir))
-      result.agent = mergeDeep(result.agent, await loadMode(dir))
-      result.plugin.push(...(await loadPlugin(dir)))
+      const [command, agent, mode, plugin] = await Promise.all([
+        loadCommand(dir),
+        loadAgent(dir),
+        loadMode(dir),
+        loadPlugin(dir),
+      ])
+
+      return {
+        dir,
+        jsonc,
+        json,
+        command,
+        agent,
+        mode,
+        plugin,
+      }
+    })
+
+    const dirResults = await Promise.all(dirLoadPromises)
+
+    for (const res of dirResults) {
+      if (res.dir.endsWith(".freecode") || res.dir === Flag.FREECODE_CONFIG_DIR) {
+        result = mergeConfigConcatArrays(result, res.jsonc)
+        // to satisfy the type checker
+        result.agent ??= {}
+        result.mode ??= {}
+        result.plugin ??= []
+
+        result = mergeConfigConcatArrays(result, res.json)
+        // to satisfy the type checker
+        result.agent ??= {}
+        result.mode ??= {}
+        result.plugin ??= []
+      }
+
+      result.command = mergeDeep(result.command ?? {}, res.command)
+      result.agent = mergeDeep(result.agent, res.agent)
+      result.agent = mergeDeep(result.agent, res.mode)
+      result.plugin.push(...res.plugin)
     }
 
     // Inline config content overrides all non-managed config sources.
