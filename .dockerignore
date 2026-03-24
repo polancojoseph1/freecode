@@ -1,5 +1,10 @@
 .git
 .opencode
-node_modules
+**/node_modules
 *.log
 .DS_Store
+.turbo
+dist
+packages/desktop/src-tauri/target
+packages/desktop-electron/out
+packages/containers

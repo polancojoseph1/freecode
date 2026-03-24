@@ -25,12 +25,10 @@ RUN bun install
 ENV CI=true
 ENV OPENAI_BASE_URL=http://localhost:9999/v1
 
-# Integration test support: pass OPENROUTER_API_KEY at build time to enable live agent tests
-ARG OPENROUTER_API_KEY
-ENV OPENROUTER_API_KEY=$OPENROUTER_API_KEY
-# If OPENROUTER_API_KEY is provided, enable integration mode (preserves provider keys in test preload)
-ARG FREECODE_INTEGRATION
-ENV FREECODE_INTEGRATION=$FREECODE_INTEGRATION
+# Integration test support: pass at runtime via docker run -e
+# OPENROUTER_API_KEY — enables live AI provider tests
+# FREECODE_INTEGRATION=1 — preserves provider keys in test preload
 
-# Run tests
-CMD ["bun", "--cwd", "packages/opencode", "test", "--timeout", "30000"]
+# Run tests (120s timeout for integration tests)
+# Note: runs as root — 1 file-permission test will false-positive (root can write to read-only)
+CMD ["bun", "--cwd", "packages/opencode", "test", "--timeout", "120000"]

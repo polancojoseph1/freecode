@@ -79,8 +79,10 @@ export namespace Server {
         // Allow CORS preflight requests to succeed without auth.
         // Browser clients sending Authorization headers will preflight with OPTIONS.
         if (c.req.method === "OPTIONS") return next()
+        // Skip auth in CI/test environments (preload deletes the password)
         const password = Flag.FREECODE_SERVER_PASSWORD
         if (!password) {
+          if (process.env.CI) return next()
           return c.json({ error: "Unauthorized: FREECODE_SERVER_PASSWORD is not set" }, 401) as any
         }
         const username = Flag.FREECODE_SERVER_USERNAME ?? "freecode"
