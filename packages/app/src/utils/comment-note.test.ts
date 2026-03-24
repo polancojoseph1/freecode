@@ -107,4 +107,15 @@ describe("parseCommentNote", () => {
       comment: "Looks good to me\nAnd another line",
     })
   })
+
+  test("returns undefined for non-matching strings", () => {
+    const result = parseCommentNote("Just a random comment that doesn't match the format")
+    expect(result).toBeUndefined()
+  })
+
+  test("returns undefined for slightly incorrect format", () => {
+    // Missing "The user made the following comment regarding "
+    const result = parseCommentNote("this file of src/index.ts: This is a comment")
+    expect(result).toBeUndefined()
+  })
 })
