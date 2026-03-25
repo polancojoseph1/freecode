@@ -18,7 +18,8 @@ const emailSignup = action(async (formData: FormData) => {
       email_address: emailAddress,
     }),
   })
-  console.log(response)
+
+  // Security Enhancement: Removed console.log(response) to prevent leaking external API headers/structures
   return true
 })
 
