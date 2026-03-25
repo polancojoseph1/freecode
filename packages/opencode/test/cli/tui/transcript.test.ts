@@ -108,7 +108,7 @@ describe("transcript", () => {
         messageID: "msg_123",
         type: "tool",
         callID: "call_1",
-        tool: "bash",
+        tool: "shell",
         state: {
           status: "completed",
           input: { command: "ls" },
@@ -119,7 +119,7 @@ describe("transcript", () => {
         },
       }
       const result = formatPart(part, options)
-      expect(result).toContain("**Tool: bash**")
+      expect(result).toContain("**Tool: shell**")
       expect(result).toContain("**Input:**")
       expect(result).toContain('"command": "ls"')
       expect(result).toContain("**Output:**")
@@ -133,7 +133,7 @@ describe("transcript", () => {
         messageID: "msg_123",
         type: "tool",
         callID: "call_1",
-        tool: "bash",
+        tool: "shell",
         state: {
           status: "completed",
           input: { command: "echo '```hello```'" },
@@ -145,7 +145,7 @@ describe("transcript", () => {
       }
       const result = formatPart(part, options)
       // The tool header should not be inside a code block
-      expect(result).toStartWith("**Tool: bash**\n")
+      expect(result).toStartWith("**Tool: shell**\n")
       // Input and output should each be in their own code blocks
       expect(result).toContain("**Input:**\n```json")
       expect(result).toContain("**Output:**\n```\n```hello```\n```")
@@ -158,7 +158,7 @@ describe("transcript", () => {
         messageID: "msg_123",
         type: "tool",
         callID: "call_1",
-        tool: "bash",
+        tool: "shell",
         state: {
           status: "completed",
           input: { command: "ls" },
@@ -169,7 +169,7 @@ describe("transcript", () => {
         },
       }
       const result = formatPart(part, { ...options, toolDetails: false })
-      expect(result).toContain("**Tool: bash**")
+      expect(result).toContain("**Tool: shell**")
       expect(result).not.toContain("**Input:**")
       expect(result).not.toContain("**Output:**")
     })
@@ -181,7 +181,7 @@ describe("transcript", () => {
         messageID: "msg_123",
         type: "tool",
         callID: "call_1",
-        tool: "bash",
+        tool: "shell",
         state: {
           status: "error",
           input: { command: "invalid" },
