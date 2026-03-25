@@ -1,6 +1,5 @@
 import type { JSX } from "solid-js"
-import { createEffect, onCleanup, onMount } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { useSpring } from "./motion-spring"
 
 export function TextStrikethrough(props: {
@@ -20,16 +19,15 @@ export function TextStrikethrough(props: {
 
   let baseRef: HTMLSpanElement | undefined
   let containerRef: HTMLSpanElement | undefined
-  const [state, setState] = createStore({
-    textWidth: 0,
-    containerWidth: 0,
-  })
-  const textWidth = () => state.textWidth
-  const containerWidth = () => state.containerWidth
+
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  // avoids unnecessary proxy overhead during high-frequency measurements.
+  const [textWidth, setTextWidth] = createSignal(0)
+  const [containerWidth, setContainerWidth] = createSignal(0)
 
   const measure = () => {
-    if (baseRef) setState("textWidth", baseRef.scrollWidth)
-    if (containerRef) setState("containerWidth", containerRef.offsetWidth)
+    if (baseRef) setTextWidth(baseRef.scrollWidth)
+    if (containerRef) setContainerWidth(containerRef.offsetWidth)
   }
 
   onMount(measure)
