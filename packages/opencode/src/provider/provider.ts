@@ -194,11 +194,6 @@ export namespace Provider {
           if (useLanguageModel(sdk)) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
         },
-        vars(options) {
-          return {
-            COPILOT_BASE_URL: options.copilotBaseUrl ?? "https://api.githubcopilot.com",
-          }
-        },
         options: {},
       }
     },
@@ -208,11 +203,6 @@ export namespace Provider {
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
           if (useLanguageModel(sdk)) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
-        },
-        vars(options) {
-          return {
-            COPILOT_BASE_URL: options.copilotBaseUrl ?? "https://api.githubcopilot.com",
-          }
         },
         options: {},
       }
@@ -277,11 +267,13 @@ export namespace Provider {
 
       const awsAccessKeyId = Env.get("AWS_ACCESS_KEY_ID")
 
+      // TODO: Using process.env directly because Env.set only updates a process.env shallow copy,
+      // until the scope of the Env API is clarified (test only or runtime?)
       const awsBearerToken = iife(() => {
-        const envToken = Env.get("AWS_BEARER_TOKEN_BEDROCK")
+        const envToken = process.env.AWS_BEARER_TOKEN_BEDROCK
         if (envToken) return envToken
         if (auth?.type === "api") {
-          Env.set("AWS_BEARER_TOKEN_BEDROCK", auth.key)
+          process.env.AWS_BEARER_TOKEN_BEDROCK = auth.key
           return auth.key
         }
         return undefined
@@ -493,17 +485,19 @@ export namespace Provider {
     },
     "sap-ai-core": async () => {
       const auth = await Auth.get("sap-ai-core")
+      // TODO: Using process.env directly because Env.set only updates a shallow copy (not process.env),
+      // until the scope of the Env API is clarified (test only or runtime?)
       const envServiceKey = iife(() => {
-        const envAICoreServiceKey = Env.get("AICORE_SERVICE_KEY")
+        const envAICoreServiceKey = process.env.AICORE_SERVICE_KEY
         if (envAICoreServiceKey) return envAICoreServiceKey
         if (auth?.type === "api") {
-          Env.set("AICORE_SERVICE_KEY", auth.key)
+          process.env.AICORE_SERVICE_KEY = auth.key
           return auth.key
         }
         return undefined
       })
-      const deploymentId = Env.get("AICORE_DEPLOYMENT_ID")
-      const resourceGroup = Env.get("AICORE_RESOURCE_GROUP")
+      const deploymentId = process.env.AICORE_DEPLOYMENT_ID
+      const resourceGroup = process.env.AICORE_RESOURCE_GROUP
 
       return {
         autoload: !!envServiceKey,
@@ -872,13 +866,6 @@ export namespace Provider {
     // Add GitHub Copilot Enterprise provider that inherits from GitHub Copilot
     if (database["github-copilot"]) {
       const githubCopilot = database["github-copilot"]
-
-      for (const model of Object.values(githubCopilot.models)) {
-        const isClaude = model.id.includes("claude")
-        model.api.url = isClaude ? "${COPILOT_BASE_URL}/v1" : "${COPILOT_BASE_URL}"
-        model.api.npm = "@ai-sdk/github-copilot"
-      }
-
       database["github-copilot-enterprise"] = {
         ...githubCopilot,
         id: ProviderID.githubCopilotEnterprise,

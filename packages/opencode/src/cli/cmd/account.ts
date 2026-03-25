@@ -47,24 +47,6 @@ const loginEffect = Effect.fn("login")(function* (url: string) {
     PollSuccess: (r) =>
       Effect.gen(function* () {
         yield* s.stop("Logged in as " + r.email)
-
-        if (r.orgs.length > 1) {
-          const opts = r.orgs.map((org) => ({
-            value: org,
-            label: org.name,
-          }))
-
-          const selected = yield* Prompt.select({
-            message: "Select active organization",
-            options: opts,
-          })
-
-          if (Option.isSome(selected)) {
-            yield* service.use(r.accountID, Option.some(selected.value.id))
-            yield* Prompt.log.info("Switched to " + selected.value.name)
-          }
-        }
-
         yield* Prompt.outro("Done")
       }),
     PollExpired: () => s.stop("Device code expired", 1),

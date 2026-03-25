@@ -1015,7 +1015,7 @@ export type GlobalEvent = {
 export type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR"
 
 /**
- * Server configuration for freecode serve and web commands
+ * Server configuration for opencode serve and web commands
  */
 export type ServerConfig = {
   /**
@@ -1031,7 +1031,7 @@ export type ServerConfig = {
    */
   mdns?: boolean
   /**
-   * Custom domain name for mDNS service (default: freecode.local)
+   * Custom domain name for mDNS service (default: opencode.local)
    */
   mdnsDomain?: string
   /**
@@ -3774,44 +3774,6 @@ export type PermissionListResponses = {
 }
 
 export type PermissionListResponse = PermissionListResponses[keyof PermissionListResponses]
-
-export type PermissionDeleteRuleData = {
-  body?: PermissionRule
-  path?: never
-  query?: {
-    directory?: string
-    workspace?: string
-  }
-  url: "/permission/ruleset"
-}
-
-export type PermissionDeleteRuleResponses = {
-  /**
-   * Rule deleted successfully
-   */
-  200: boolean
-}
-
-export type PermissionDeleteRuleResponse = PermissionDeleteRuleResponses[keyof PermissionDeleteRuleResponses]
-
-export type PermissionListRulesetData = {
-  body?: never
-  path?: never
-  query?: {
-    directory?: string
-    workspace?: string
-  }
-  url: "/permission/ruleset"
-}
-
-export type PermissionListRulesetResponses = {
-  /**
-   * List of rules
-   */
-  200: PermissionRuleset
-}
-
-export type PermissionListRulesetResponse = PermissionListRulesetResponses[keyof PermissionListRulesetResponses]
 
 export type QuestionListData = {
   body?: never

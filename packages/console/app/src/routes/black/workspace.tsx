@@ -1,4 +1,4 @@
-import { A, createAsync, useNavigate, query } from "@solidjs/router"
+import { A, createAsync, useNavigate } from "@solidjs/router"
 import "./workspace.css"
 import { Title } from "@solidjs/meta"
 import { github } from "~/lib/github"
@@ -8,34 +8,6 @@ import { createList } from "solid-list"
 import { useLanguage } from "~/context/language"
 import { LanguagePicker } from "~/component/language-picker"
 import { useI18n } from "~/context/i18n"
-import { withActor } from "~/context/auth.withActor"
-import { Actor } from "@opencode-ai/console-core/actor.js"
-import { and, Database, eq, isNull } from "@opencode-ai/console-core/drizzle/index.js"
-import { WorkspaceTable } from "@opencode-ai/console-core/schema/workspace.sql.js"
-import { UserTable } from "@opencode-ai/console-core/schema/user.sql.js"
-
-const getWorkspaces = query(async () => {
-  "use server"
-  return withActor(async () => {
-    return Database.use((tx) =>
-      tx
-        .select({
-          id: WorkspaceTable.id,
-          name: WorkspaceTable.name,
-          slug: WorkspaceTable.slug,
-        })
-        .from(UserTable)
-        .innerJoin(WorkspaceTable, eq(UserTable.workspaceID, WorkspaceTable.id))
-        .where(
-          and(
-            eq(UserTable.accountID, Actor.account()),
-            isNull(WorkspaceTable.timeDeleted),
-            isNull(UserTable.timeDeleted),
-          ),
-        ),
-    )
-  })
-}, "workspaces")
 
 export default function BlackWorkspace() {
   const navigate = useNavigate()
@@ -51,14 +23,26 @@ export default function BlackWorkspace() {
       : config.github.starsFormatted.compact,
   )
 
-  const workspacesData = createAsync(() => getWorkspaces())
-  const workspaces = () => workspacesData() || []
+  // TODO: Frank, replace with real workspaces
+  const workspaces = [
+    { id: "wrk_123", n: 1 },
+    { id: "wrk_456", n: 2 },
+    { id: "wrk_789", n: 3 },
+    { id: "wrk_111", n: 4 },
+    { id: "wrk_222", n: 5 },
+    { id: "wrk_333", n: 6 },
+    { id: "wrk_444", n: 7 },
+    { id: "wrk_555", n: 8 },
+  ].map((workspace) => ({
+    ...workspace,
+    name: i18n.t("black.workspace.name", { n: workspace.n }),
+  }))
 
   let listRef: HTMLUListElement | undefined
 
   const { active, setActive, onKeyDown } = createList({
-    items: () => workspaces().map((w) => w.id),
-    initialActive: workspaces()[0]?.id ?? null,
+    items: () => workspaces.map((w) => w.id),
+    initialActive: workspaces[0]?.id ?? null,
     handleTab: true,
   })
 
@@ -211,7 +195,7 @@ export default function BlackWorkspace() {
               }
             }}
           >
-            <For each={workspaces()}>
+            <For each={workspaces}>
               {(workspace) => (
                 <li
                   data-slot="workspace"
@@ -221,7 +205,7 @@ export default function BlackWorkspace() {
                   onClick={() => navigate(`/black/workspace/${workspace.id}`)}
                 >
                   <span data-slot="selected-icon">[*]</span>
-                  <a href={`/black/workspace/${workspace.id}`}>{workspace.name || workspace.slug}</a>
+                  <a href={`/black/workspace/${workspace.id}`}>{workspace.name}</a>
                 </li>
               )}
             </For>

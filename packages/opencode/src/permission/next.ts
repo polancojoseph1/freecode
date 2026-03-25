@@ -46,11 +46,7 @@ export namespace PermissionNext {
 
   export function fromConfig(permission: Config.Permission) {
     const ruleset: Ruleset = []
-    for (let [key, value] of Object.entries(permission)) {
-      if (key === "bash") {
-        key = "shell"
-      }
-
+    for (const [key, value] of Object.entries(permission)) {
       if (typeof value === "string") {
         ruleset.push({
           permission: key,
@@ -77,12 +73,6 @@ export namespace PermissionNext {
   export async function list() {
     return runPromise((service) => service.list())
   }
-
-  export async function listRuleset() {
-    return runPromise((service) => service.listRuleset())
-  }
-
-  export const deleteRule = fn(S.DeleteRuleInput, async (input) => runPromise((service) => service.deleteRule(input)))
 
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     return S.evaluate(permission, pattern, ...rulesets)

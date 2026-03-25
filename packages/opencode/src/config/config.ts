@@ -294,6 +294,8 @@ export namespace Config {
     await BunProc.run(
       [
         "install",
+        // TODO: get rid of this case (see: https://github.com/oven-sh/bun/issues/19936)
+        ...(proxied() || process.env.CI ? ["--no-cache"] : []),
       ],
       { cwd: dir },
     ).catch((err) => {
@@ -381,16 +383,12 @@ export namespace Config {
 
   async function loadCommand(dir: string) {
     const result: Record<string, Command> = {}
-
-    const files = await Glob.scan("{command,commands}/**/*.md", {
+    for (const item of await Glob.scan("{command,commands}/**/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })
-
-    // Load and parse all command files concurrently (N+1 read optimization)
-    const promises = files.map(async (item) => {
+    })) {
       const md = await ConfigMarkdown.parse(item).catch(async (err) => {
         const message = ConfigMarkdown.FrontmatterError.isInstance(err)
           ? err.data.message
@@ -400,7 +398,7 @@ export namespace Config {
         log.error("failed to load command", { command: item, err })
         return undefined
       })
-      if (!md) return undefined
+      if (!md) continue
 
       const patterns = ["/.freecode/command/", "/.freecode/commands/", "/command/", "/commands/"]
       const file = rel(item, patterns) ?? path.basename(item)
@@ -411,37 +409,25 @@ export namespace Config {
         ...md.data,
         template: md.content.trim(),
       }
-
       const parsed = Command.safeParse(config)
       if (parsed.success) {
-        return { name: config.name, data: parsed.data }
+        result[config.name] = parsed.data
+        continue
       }
-
       throw new InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
-    })
-
-    const parsedCommands = await Promise.all(promises)
-    for (const parsed of parsedCommands) {
-      if (parsed) {
-        result[parsed.name] = parsed.data
-      }
     }
-
     return result
   }
 
   async function loadAgent(dir: string) {
     const result: Record<string, Agent> = {}
 
-    const files = await Glob.scan("{agent,agents}/**/*.md", {
+    for (const item of await Glob.scan("{agent,agents}/**/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })
-
-    // Load and parse all agent files concurrently (N+1 read optimization)
-    const promises = files.map(async (item) => {
+    })) {
       const md = await ConfigMarkdown.parse(item).catch(async (err) => {
         const message = ConfigMarkdown.FrontmatterError.isInstance(err)
           ? err.data.message
@@ -451,7 +437,7 @@ export namespace Config {
         log.error("failed to load agent", { agent: item, err })
         return undefined
       })
-      if (!md) return undefined
+      if (!md) continue
 
       const patterns = ["/.freecode/agent/", "/.freecode/agents/", "/agent/", "/agents/"]
       const file = rel(item, patterns) ?? path.basename(item)
@@ -464,33 +450,22 @@ export namespace Config {
       }
       const parsed = Agent.safeParse(config)
       if (parsed.success) {
-        return { name: config.name, data: parsed.data }
+        result[config.name] = parsed.data
+        continue
       }
       throw new InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
-    })
-
-    const parsedAgents = await Promise.all(promises)
-    for (const parsed of parsedAgents) {
-      if (parsed) {
-        result[parsed.name] = parsed.data
-      }
     }
-
     return result
   }
 
   async function loadMode(dir: string) {
     const result: Record<string, Agent> = {}
-
-    const files = await Glob.scan("{mode,modes}/*.md", {
+    for (const item of await Glob.scan("{mode,modes}/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })
-
-    // Load and parse all mode files concurrently (N+1 read optimization)
-    const promises = files.map(async (item) => {
+    })) {
       const md = await ConfigMarkdown.parse(item).catch(async (err) => {
         const message = ConfigMarkdown.FrontmatterError.isInstance(err)
           ? err.data.message
@@ -500,7 +475,7 @@ export namespace Config {
         log.error("failed to load mode", { mode: item, err })
         return undefined
       })
-      if (!md) return undefined
+      if (!md) continue
 
       const config = {
         name: path.basename(item, ".md"),
@@ -509,24 +484,13 @@ export namespace Config {
       }
       const parsed = Agent.safeParse(config)
       if (parsed.success) {
-        return {
-          name: config.name,
-          data: {
-            ...parsed.data,
-            mode: "primary" as const,
-          }
+        result[config.name] = {
+          ...parsed.data,
+          mode: "primary" as const,
         }
-      }
-      return undefined
-    })
-
-    const parsedModes = await Promise.all(promises)
-    for (const parsed of parsedModes) {
-      if (parsed) {
-        result[parsed.name] = parsed.data
+        continue
       }
     }
-
     return result
   }
 
@@ -705,7 +669,7 @@ export namespace Config {
           glob: PermissionRule.optional(),
           grep: PermissionRule.optional(),
           list: PermissionRule.optional(),
-          shell: PermissionRule.optional(),
+          bash: PermissionRule.optional(),
           task: PermissionRule.optional(),
           external_directory: PermissionRule.optional(),
           todowrite: PermissionAction.optional(),

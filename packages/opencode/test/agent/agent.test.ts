@@ -39,7 +39,7 @@ test("build agent has correct default properties", async () => {
       expect(build?.mode).toBe("primary")
       expect(build?.native).toBe(true)
       expect(evalPerm(build, "edit")).toBe("allow")
-      expect(evalPerm(build, "shell")).toBe("allow")
+      expect(evalPerm(build, "bash")).toBe("allow")
     },
   })
 })
@@ -112,7 +112,7 @@ test("compaction agent denies all permissions", async () => {
       const compaction = await Agent.get("compaction")
       expect(compaction).toBeDefined()
       expect(compaction?.hidden).toBe(true)
-      expect(evalPerm(compaction, "shell")).toBe("deny")
+      expect(evalPerm(compaction, "bash")).toBe("deny")
       expect(evalPerm(compaction, "edit")).toBe("deny")
       expect(evalPerm(compaction, "read")).toBe("deny")
     },
@@ -216,7 +216,7 @@ test("agent permission config merges with defaults", async () => {
       const build = await Agent.get("build")
       expect(build).toBeDefined()
       // Specific pattern is denied
-      expect(PermissionNext.evaluate("shell", "rm -rf *", build!.permission).action).toBe("deny")
+      expect(PermissionNext.evaluate("bash", "rm -rf *", build!.permission).action).toBe("deny")
       // Edit still allowed
       expect(evalPerm(build, "edit")).toBe("allow")
     },
@@ -236,7 +236,7 @@ test("global permission config applies to all agents", async () => {
     fn: async () => {
       const build = await Agent.get("build")
       expect(build).toBeDefined()
-      expect(evalPerm(build, "shell")).toBe("deny")
+      expect(evalPerm(build, "bash")).toBe("deny")
     },
   })
 })
@@ -435,7 +435,7 @@ test("legacy tools config converts to permissions", async () => {
     directory: tmp.path,
     fn: async () => {
       const build = await Agent.get("build")
-      expect(evalPerm(build, "shell")).toBe("deny")
+      expect(evalPerm(build, "bash")).toBe("deny")
       expect(evalPerm(build, "read")).toBe("deny")
     },
   })

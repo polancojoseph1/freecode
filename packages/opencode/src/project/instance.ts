@@ -96,14 +96,11 @@ export const Instance = {
    * Paths within the worktree but outside the working directory should not trigger external_directory permission.
    */
   containsPath(filepath: string) {
-    const canonicalPath = Filesystem.resolve(filepath)
-    const canonicalDirectory = Filesystem.resolve(Instance.directory)
-    if (Filesystem.contains(canonicalDirectory, canonicalPath)) return true
+    if (Filesystem.contains(Instance.directory, filepath)) return true
     // Non-git projects set worktree to "/" which would match ANY absolute path.
     // Skip worktree check in this case to preserve external_directory permissions.
     if (Instance.worktree === "/") return false
-    const canonicalWorktree = Filesystem.resolve(Instance.worktree)
-    return Filesystem.contains(canonicalWorktree, canonicalPath)
+    return Filesystem.contains(Instance.worktree, filepath)
   },
   state<S>(init: () => S, dispose?: (state: Awaited<S>) => Promise<void>): () => S {
     return State.create(() => Instance.directory, init, dispose)

@@ -210,8 +210,6 @@ it.effect(
     expect(res._tag).toBe("PollSuccess")
     if (res._tag === "PollSuccess") {
       expect(res.email).toBe("user@example.com")
-      expect(res.accountID).toBe(AccountID.make("user-1"))
-      expect(res.orgs).toEqual([new Org({ id: OrgID.make("org-1"), name: "One" })])
     }
 
     const active = yield* AccountRepo.use((r) => r.active())

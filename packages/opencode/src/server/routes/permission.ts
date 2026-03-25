@@ -65,51 +65,5 @@ export const PermissionRoutes = lazy(() =>
         const permissions = await PermissionNext.list()
         return c.json(permissions)
       },
-    )
-    .get(
-      "/ruleset",
-      describeRoute({
-        summary: "List ruleset",
-        description: "Get the current permission ruleset.",
-        operationId: "permission.listRuleset",
-        responses: {
-          200: {
-            description: "List of rules",
-            content: {
-              "application/json": {
-                schema: resolver(PermissionNext.Ruleset),
-              },
-            },
-          },
-        },
-      }),
-      async (c) => {
-        const ruleset = await PermissionNext.listRuleset()
-        return c.json(ruleset)
-      },
-    )
-    .delete(
-      "/ruleset",
-      describeRoute({
-        summary: "Delete rule",
-        description: "Delete a specific rule from the permission ruleset.",
-        operationId: "permission.deleteRule",
-        responses: {
-          200: {
-            description: "Rule deleted successfully",
-            content: {
-              "application/json": {
-                schema: resolver(z.boolean()),
-              },
-            },
-          },
-        },
-      }),
-      validator("json", PermissionNext.Rule),
-      async (c) => {
-        const json = c.req.valid("json")
-        await PermissionNext.deleteRule(json)
-        return c.json(true)
-      },
     ),
 )

@@ -2,7 +2,7 @@ import { chmod, mkdir, readFile, writeFile } from "fs/promises"
 import { createWriteStream, existsSync, statSync } from "fs"
 import { lookup } from "mime-types"
 import { realpathSync } from "fs"
-import { basename, dirname, isAbsolute, join, relative, resolve as pathResolve } from "path"
+import { dirname, join, relative, resolve as pathResolve } from "path"
 import { Readable } from "stream"
 import { pipeline } from "stream/promises"
 import { Glob } from "./glob"
@@ -121,11 +121,7 @@ export namespace Filesystem {
     try {
       return normalizePath(realpathSync(resolved))
     } catch (e) {
-      if (isEnoent(e)) {
-        const parent = dirname(resolved)
-        if (parent === resolved) return normalizePath(resolved)
-        return join(resolve(parent), basename(resolved))
-      }
+      if (isEnoent(e)) return normalizePath(resolved)
       throw e
     }
   }
@@ -144,17 +140,13 @@ export namespace Filesystem {
     )
   }
   export function overlaps(a: string, b: string) {
-    return contains(a, b) || contains(b, a)
+    const relA = relative(a, b)
+    const relB = relative(b, a)
+    return !relA || !relA.startsWith("..") || !relB || !relB.startsWith("..")
   }
 
   export function contains(parent: string, child: string) {
-    const p = resolve(parent)
-    const c = resolve(child)
-    const rel = relative(p, c)
-    // On Windows, relative paths between different drives return an absolute path.
-    // E.g., relative('C:\\foo', 'D:\\bar') returns 'D:\\bar'.
-    // Since it doesn't start with '..', it would bypass the containment check if we only checked startsWith('..').
-    return !rel.startsWith("..") && !isAbsolute(rel)
+    return !relative(parent, child).startsWith("..")
   }
 
   export async function findUp(target: string, start: string, stop?: string) {

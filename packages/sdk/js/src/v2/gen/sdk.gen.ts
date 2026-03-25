@@ -70,14 +70,11 @@ import type {
   PartUpdateErrors,
   PartUpdateResponses,
   PathGetResponses,
-  PermissionDeleteRuleResponses,
   PermissionListResponses,
-  PermissionListRulesetResponses,
   PermissionReplyErrors,
   PermissionReplyResponses,
   PermissionRespondErrors,
   PermissionRespondResponses,
-  PermissionRule,
   PermissionRuleset,
   ProjectCurrentResponses,
   ProjectInitGitResponses,
@@ -2378,73 +2375,6 @@ export class Permission extends HeyApiClient {
     )
     return (options?.client ?? this.client).get<PermissionListResponses, unknown, ThrowOnError>({
       url: "/permission",
-      ...options,
-      ...params,
-    })
-  }
-
-  /**
-   * Delete rule
-   *
-   * Delete a specific rule from the permission ruleset.
-   */
-  public deleteRule<ThrowOnError extends boolean = false>(
-    parameters?: {
-      directory?: string
-      workspace?: string
-      permissionRule?: PermissionRule
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams(
-      [parameters],
-      [
-        {
-          args: [
-            { in: "query", key: "directory" },
-            { in: "query", key: "workspace" },
-            { key: "permissionRule", map: "body" },
-          ],
-        },
-      ],
-    )
-    return (options?.client ?? this.client).delete<PermissionDeleteRuleResponses, unknown, ThrowOnError>({
-      url: "/permission/ruleset",
-      ...options,
-      ...params,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-        ...params.headers,
-      },
-    })
-  }
-
-  /**
-   * List ruleset
-   *
-   * Get the current permission ruleset.
-   */
-  public listRuleset<ThrowOnError extends boolean = false>(
-    parameters?: {
-      directory?: string
-      workspace?: string
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams(
-      [parameters],
-      [
-        {
-          args: [
-            { in: "query", key: "directory" },
-            { in: "query", key: "workspace" },
-          ],
-        },
-      ],
-    )
-    return (options?.client ?? this.client).get<PermissionListRulesetResponses, unknown, ThrowOnError>({
-      url: "/permission/ruleset",
       ...options,
       ...params,
     })

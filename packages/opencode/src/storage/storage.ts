@@ -9,7 +9,6 @@ import { NamedError } from "@opencode-ai/util/error"
 import z from "zod"
 import { Glob } from "../util/glob"
 import { git } from "@/util/git"
-import { work } from "../util/queue"
 
 export namespace Storage {
   const log = Log.create({ service: "storage" })
@@ -116,27 +115,23 @@ export namespace Storage {
       }
     },
     async (dir) => {
-      const items = await Glob.scan("session/*/*.json", {
+      for (const item of await Glob.scan("session/*/*.json", {
         cwd: dir,
         absolute: true,
-      })
-
-      await work(50, items, async (item) => {
+      })) {
         const session = await Filesystem.readJson<any>(item)
-        if (!session.projectID) return
-        if (!session.summary?.diffs) return
+        if (!session.projectID) continue
+        if (!session.summary?.diffs) continue
         const { diffs } = session.summary
-        await Promise.all([
-          Filesystem.write(path.join(dir, "session_diff", session.id + ".json"), JSON.stringify(diffs)),
-          Filesystem.writeJson(path.join(dir, "session", session.projectID, session.id + ".json"), {
-            ...session,
-            summary: {
-              additions: diffs.reduce((sum: any, x: any) => sum + x.additions, 0),
-              deletions: diffs.reduce((sum: any, x: any) => sum + x.deletions, 0),
-            },
-          })
-        ])
-      })
+        await Filesystem.write(path.join(dir, "session_diff", session.id + ".json"), JSON.stringify(diffs))
+        await Filesystem.writeJson(path.join(dir, "session", session.projectID, session.id + ".json"), {
+          ...session,
+          summary: {
+            additions: diffs.reduce((sum: any, x: any) => sum + x.additions, 0),
+            deletions: diffs.reduce((sum: any, x: any) => sum + x.deletions, 0),
+          },
+        })
+      }
     },
   ]
 

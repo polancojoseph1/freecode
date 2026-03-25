@@ -138,7 +138,7 @@ export namespace ACP {
     private sessionManager: ACPSessionManager
     private eventAbort = new AbortController()
     private eventStarted = false
-    private shellSnapshots = new Map<string, string>()
+    private bashSnapshots = new Map<string, string>()
     private toolStarts = new Set<string>()
     private permissionQueues = new Map<string, Promise<void>>()
     private permissionOptions: PermissionOption[] = [
@@ -277,16 +277,16 @@ export namespace ACP {
 
             switch (part.state.status) {
               case "pending":
-                this.shellSnapshots.delete(part.callID)
+                this.bashSnapshots.delete(part.callID)
                 return
 
               case "running":
-                const output = this.shellOutput(part)
+                const output = this.bashOutput(part)
                 const content: ToolCallContent[] = []
                 if (output) {
                   const hash = Hash.fast(output)
-                  if (part.tool === "shell") {
-                    if (this.shellSnapshots.get(part.callID) === hash) {
+                  if (part.tool === "bash") {
+                    if (this.bashSnapshots.get(part.callID) === hash) {
                       await this.connection
                         .sessionUpdate({
                           sessionId,
@@ -305,7 +305,7 @@ export namespace ACP {
                         })
                       return
                     }
-                    this.shellSnapshots.set(part.callID, hash)
+                    this.bashSnapshots.set(part.callID, hash)
                   }
                   content.push({
                     type: "content",
@@ -336,7 +336,7 @@ export namespace ACP {
 
               case "completed": {
                 this.toolStarts.delete(part.callID)
-                this.shellSnapshots.delete(part.callID)
+                this.bashSnapshots.delete(part.callID)
                 const kind = toToolKind(part.tool)
                 const content: ToolCallContent[] = [
                   {
@@ -417,7 +417,7 @@ export namespace ACP {
               }
               case "error":
                 this.toolStarts.delete(part.callID)
-                this.shellSnapshots.delete(part.callID)
+                this.bashSnapshots.delete(part.callID)
                 await this.connection
                   .sessionUpdate({
                     sessionId,
@@ -817,10 +817,10 @@ export namespace ACP {
           await this.toolStart(sessionId, part)
           switch (part.state.status) {
             case "pending":
-              this.shellSnapshots.delete(part.callID)
+              this.bashSnapshots.delete(part.callID)
               break
             case "running":
-              const output = this.shellOutput(part)
+              const output = this.bashOutput(part)
               const runningContent: ToolCallContent[] = []
               if (output) {
                 runningContent.push({
@@ -851,7 +851,7 @@ export namespace ACP {
               break
             case "completed":
               this.toolStarts.delete(part.callID)
-              this.shellSnapshots.delete(part.callID)
+              this.bashSnapshots.delete(part.callID)
               const kind = toToolKind(part.tool)
               const content: ToolCallContent[] = [
                 {
@@ -931,7 +931,7 @@ export namespace ACP {
               break
             case "error":
               this.toolStarts.delete(part.callID)
-              this.shellSnapshots.delete(part.callID)
+              this.bashSnapshots.delete(part.callID)
               await this.connection
                 .sessionUpdate({
                   sessionId,
@@ -1080,8 +1080,8 @@ export namespace ACP {
       }
     }
 
-    private shellOutput(part: ToolPart) {
-      if (part.tool !== "shell") return
+    private bashOutput(part: ToolPart) {
+      if (part.tool !== "bash") return
       if (!("metadata" in part.state) || !part.state.metadata || typeof part.state.metadata !== "object") return
       const output = part.state.metadata["output"]
       if (typeof output !== "string") return
@@ -1483,7 +1483,7 @@ export namespace ACP {
   function toToolKind(toolName: string): ToolKind {
     const tool = toolName.toLocaleLowerCase()
     switch (tool) {
-      case "shell":
+      case "bash":
         return "execute"
       case "webfetch":
         return "fetch"
@@ -1518,7 +1518,7 @@ export namespace ACP {
       case "glob":
       case "grep":
         return input["path"] ? [{ path: input["path"] }] : []
-      case "shell":
+      case "bash":
         return []
       case "list":
         return input["path"] ? [{ path: input["path"] }] : []

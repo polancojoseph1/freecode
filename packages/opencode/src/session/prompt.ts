@@ -1,4 +1,3 @@
-import { ToolInvoke } from "@/tool/invoke"
 import path from "path"
 import os from "os"
 import fs from "fs/promises"
@@ -406,9 +405,16 @@ export namespace SessionPrompt {
           description: task.description,
           subagent_type: task.agent,
           command: task.command,
-          parts: task.parts,
         }
-
+        await Plugin.trigger(
+          "tool.execute.before",
+          {
+            tool: "task",
+            sessionID,
+            callID: part.id,
+          },
+          { args: taskArgs },
+        )
         let executionError: Error | undefined
         const taskAgent = await Agent.get(task.agent)
         const taskCtx: Tool.Context = {
@@ -437,13 +443,27 @@ export namespace SessionPrompt {
             })
           },
         }
-
-        const result = await ToolInvoke.execute("task", taskArgs, taskCtx, (args, ctx) => taskTool.execute(args, ctx)).catch((error) => {
+        const result = await taskTool.execute(taskArgs, taskCtx).catch((error) => {
           executionError = error
           log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
           return undefined
         })
-
+        const attachments = result?.attachments?.map((attachment) => ({
+          ...attachment,
+          id: PartID.ascending(),
+          sessionID,
+          messageID: assistantMessage.id,
+        }))
+        await Plugin.trigger(
+          "tool.execute.after",
+          {
+            tool: "task",
+            sessionID,
+            callID: part.id,
+            args: taskArgs,
+          },
+          result,
+        )
         assistantMessage.finish = "tool-calls"
         assistantMessage.time.completed = Date.now()
         await Session.updateMessage(assistantMessage)
@@ -456,7 +476,7 @@ export namespace SessionPrompt {
               title: result.title,
               metadata: result.metadata,
               output: result.output,
-              attachments: result.attachments,
+              attachments,
               time: {
                 ...part.state.time,
                 end: Date.now(),
@@ -781,7 +801,38 @@ export namespace SessionPrompt {
         inputSchema: jsonSchema(schema as any),
         async execute(args, options) {
           const ctx = context(args, options)
-          return ToolInvoke.execute(item.id, args, ctx, (args, ctx) => item.execute(args, ctx))
+          await Plugin.trigger(
+            "tool.execute.before",
+            {
+              tool: item.id,
+              sessionID: ctx.sessionID,
+              callID: ctx.callID,
+            },
+            {
+              args,
+            },
+          )
+          const result = await item.execute(args, ctx)
+          const output = {
+            ...result,
+            attachments: result.attachments?.map((attachment) => ({
+              ...attachment,
+              id: PartID.ascending(),
+              sessionID: ctx.sessionID,
+              messageID: input.processor.message.id,
+            })),
+          }
+          await Plugin.trigger(
+            "tool.execute.after",
+            {
+              tool: item.id,
+              sessionID: ctx.sessionID,
+              callID: ctx.callID,
+              args,
+            },
+            output,
+          )
+          return output
         },
       })
     }
@@ -796,59 +847,85 @@ export namespace SessionPrompt {
       item.execute = async (args, opts) => {
         const ctx = context(args, opts)
 
-        return ToolInvoke.execute(key, args, ctx, async (args, ctx) => {
-          await ctx.ask({
-            permission: key,
-            metadata: {},
-            patterns: ["*"],
-            always: ["*"],
-          })
+        await Plugin.trigger(
+          "tool.execute.before",
+          {
+            tool: key,
+            sessionID: ctx.sessionID,
+            callID: opts.toolCallId,
+          },
+          {
+            args,
+          },
+        )
 
-          const result = await execute(args, opts)
+        await ctx.ask({
+          permission: key,
+          metadata: {},
+          patterns: ["*"],
+          always: ["*"],
+        })
 
-          const textParts: string[] = []
-          const attachments: Omit<MessageV2.FilePart, "id" | "sessionID" | "messageID">[] = []
+        const result = await execute(args, opts)
 
-          for (const contentItem of result.content) {
-            if (contentItem.type === "text") {
-              textParts.push(contentItem.text)
-            } else if (contentItem.type === "image") {
+        await Plugin.trigger(
+          "tool.execute.after",
+          {
+            tool: key,
+            sessionID: ctx.sessionID,
+            callID: opts.toolCallId,
+            args,
+          },
+          result,
+        )
+
+        const textParts: string[] = []
+        const attachments: Omit<MessageV2.FilePart, "id" | "sessionID" | "messageID">[] = []
+
+        for (const contentItem of result.content) {
+          if (contentItem.type === "text") {
+            textParts.push(contentItem.text)
+          } else if (contentItem.type === "image") {
+            attachments.push({
+              type: "file",
+              mime: contentItem.mimeType,
+              url: `data:${contentItem.mimeType};base64,${contentItem.data}`,
+            })
+          } else if (contentItem.type === "resource") {
+            const { resource } = contentItem
+            if (resource.text) {
+              textParts.push(resource.text)
+            }
+            if (resource.blob) {
               attachments.push({
                 type: "file",
-                mime: contentItem.mimeType,
-                url: `data:${contentItem.mimeType};base64,${contentItem.data}`,
+                mime: resource.mimeType ?? "application/octet-stream",
+                url: `data:${resource.mimeType ?? "application/octet-stream"};base64,${resource.blob}`,
+                filename: resource.uri,
               })
-            } else if (contentItem.type === "resource") {
-              const { resource } = contentItem
-              if (resource.text) {
-                textParts.push(resource.text)
-              }
-              if (resource.blob) {
-                attachments.push({
-                  type: "file",
-                  mime: resource.mimeType ?? "application/octet-stream",
-                  url: `data:${resource.mimeType ?? "application/octet-stream"};base64,${resource.blob}`,
-                  filename: resource.uri,
-                })
-              }
             }
           }
+        }
 
-          const truncated = await Truncate.output(textParts.join("\n\n"), {}, input.agent)
-          const metadata = {
-            ...(result.metadata ?? {}),
-            truncated: truncated.truncated,
-            ...(truncated.truncated && { outputPath: truncated.outputPath }),
-          }
+        const truncated = await Truncate.output(textParts.join("\n\n"), {}, input.agent)
+        const metadata = {
+          ...(result.metadata ?? {}),
+          truncated: truncated.truncated,
+          ...(truncated.truncated && { outputPath: truncated.outputPath }),
+        }
 
-          return {
-            title: "",
-            metadata,
-            output: truncated.content,
-            attachments,
-            content: result.content, // directly return content to preserve ordering when outputting to model
-          }
-        })
+        return {
+          title: "",
+          metadata,
+          output: truncated.content,
+          attachments: attachments.map((attachment) => ({
+            ...attachment,
+            id: PartID.ascending(),
+            sessionID: ctx.sessionID,
+            messageID: input.processor.message.id,
+          })),
+          content: result.content, // directly return content to preserve ordering when outputting to model
+        }
       }
       tools[key] = item
     }
@@ -1484,7 +1561,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
       id: PartID.ascending(),
       messageID: msg.id,
       sessionID: input.sessionID,
-      tool: "shell",
+      tool: "bash",
       callID: ulid(),
       state: {
         status: "running",
@@ -1779,8 +1856,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               providerID: taskModel.providerID,
               modelID: taskModel.modelID,
             },
+            // TODO: how can we make task tool accept a more complex input?
             prompt: templateParts.find((y) => y.type === "text")?.text ?? "",
-            parts: [...templateParts, ...(input.parts ?? [])],
           },
         ]
       : [...templateParts, ...(input.parts ?? [])]

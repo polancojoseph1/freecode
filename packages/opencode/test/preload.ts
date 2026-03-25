@@ -72,8 +72,7 @@ if (!process.env["FREECODE_INTEGRATION"]) {
   delete process.env["FIREWORKS_API_KEY"]
   delete process.env["CEREBRAS_API_KEY"]
   delete process.env["SAMBANOVA_API_KEY"]
-  // Set a known test password so server auth tests can authenticate
-  process.env["FREECODE_SERVER_PASSWORD"] = "test-password"
+  // delete process.env["FREECODE_SERVER_PASSWORD"] // Keep server password for tests
   delete process.env["FREECODE_SERVER_USERNAME"]
 }
 
