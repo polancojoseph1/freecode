@@ -142,21 +142,21 @@ export default {
           // "https://raw.githubusercontent.com/nvim-treesitter/nvim-treesitter/refs/heads/master/queries/html/highlights.scm",
           "https://github.com/tree-sitter/tree-sitter-html/raw/refs/heads/master/queries/highlights.scm",
         ],
-        // TODO: Injections not working for some reason
-        // injections: [
-        //   "https://github.com/tree-sitter/tree-sitter-html/raw/refs/heads/master/queries/injections.scm",
-        // ],
+        injections: [
+          `((script_element) @injection.content)`,
+          `((style_element) @injection.content)`,
+        ],
       },
-      // injectionMapping: {
-      //   nodeTypes: {
-      //     script_element: "javascript",
-      //     style_element: "css",
-      //   },
-      //   infoStringMap: {
-      //     javascript: "javascript",
-      //     css: "css",
-      //   },
-      // },
+      injectionMapping: {
+        nodeTypes: {
+          script_element: "javascript",
+          style_element: "css",
+        },
+        infoStringMap: {
+          javascript: "javascript",
+          css: "css",
+        },
+      },
     },
     {
       filetype: "json",
