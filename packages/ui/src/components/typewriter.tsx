@@ -1,13 +1,12 @@
-import { createEffect, onCleanup, Show, type ValidComponent } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createEffect, onCleanup, Show, createSignal, type ValidComponent } from "solid-js"
 import { Dynamic } from "solid-js/web"
 
 export const Typewriter = <T extends ValidComponent = "p">(props: { text?: string; class?: string; as?: T }) => {
-  const [store, setStore] = createStore({
-    typing: false,
-    displayed: "",
-    cursor: true,
-  })
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  // avoids unnecessary proxy overhead during high-frequency updates like typing animations.
+  const [typing, setTyping] = createSignal(false)
+  const [displayed, setDisplayed] = createSignal("")
+  const [cursor, setCursor] = createSignal(true)
 
   createEffect(() => {
     const text = props.text
@@ -15,9 +14,9 @@ export const Typewriter = <T extends ValidComponent = "p">(props: { text?: strin
 
     let i = 0
     const timeouts: ReturnType<typeof setTimeout>[] = []
-    setStore("typing", true)
-    setStore("displayed", "")
-    setStore("cursor", true)
+    setTyping(true)
+    setDisplayed("")
+    setCursor(true)
 
     const getTypingDelay = () => {
       const random = Math.random()
@@ -28,12 +27,12 @@ export const Typewriter = <T extends ValidComponent = "p">(props: { text?: strin
 
     const type = () => {
       if (i < text.length) {
-        setStore("displayed", text.slice(0, i + 1))
+        setDisplayed(text.slice(0, i + 1))
         i++
         timeouts.push(setTimeout(type, getTypingDelay()))
       } else {
-        setStore("typing", false)
-        timeouts.push(setTimeout(() => setStore("cursor", false), 2000))
+        setTyping(false)
+        timeouts.push(setTimeout(() => setCursor(false), 2000))
       }
     }
 
@@ -46,9 +45,9 @@ export const Typewriter = <T extends ValidComponent = "p">(props: { text?: strin
 
   return (
     <Dynamic component={props.as || "p"} class={props.class}>
-      {store.displayed}
-      <Show when={store.cursor}>
-        <span classList={{ "blinking-cursor": !store.typing }}>│</span>
+      {displayed()}
+      <Show when={cursor()}>
+        <span classList={{ "blinking-cursor": !typing() }}>│</span>
       </Show>
     </Dynamic>
   )

@@ -21,3 +21,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 - **Change:** Refactored sequential `for...of` loop in `packages/opencode/src/storage/storage.ts` to use concurrent chunked processing.
 - **Impact:** Decreased migration time for 1000 items from ~500ms to ~100ms (5x improvement).
 - **Learning:** Utilize the existing `work` utility from `packages/opencode/src/util/queue.ts` for concurrency limits instead of writing custom chunking logic. Also, group independent I/O writes within the same iteration using `Promise.all` for additional gains.
+
+## 2025-03-24 - [SolidJS Store Proxy Overhead]
+**Learning:** Using `createStore` to track state that updates frequently (like in a `setTimeout` loop or `requestAnimationFrame`) or contains simple primitives adds measurable proxy overhead in SolidJS components.
+**Action:** Always prefer `createSignal` over `createStore` for independent, frequently updating primitive values like numbers, strings, or booleans within UI components (e.g., `Typewriter`, `TextStrikethrough`).
