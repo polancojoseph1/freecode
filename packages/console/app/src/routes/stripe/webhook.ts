@@ -15,7 +15,9 @@ export async function POST(input: APIEvent) {
     input.request.headers.get("stripe-signature")!,
     Resource.STRIPE_WEBHOOK_SECRET.value,
   )
-  console.log(body.type, JSON.stringify(body, null, 2))
+
+  // Security Enhancement: Log only the event type, not the full payload (which contains PII/sensitive data)
+  console.log("Stripe Webhook Event:", body.type)
 
   return (async () => {
     if (body.type === "customer.updated") {
@@ -294,7 +296,8 @@ export async function POST(input: APIEvent) {
         if (!invoiceID) throw new Error("Invoice ID not found")
 
         const paymentIntent = await Billing.stripe().paymentIntents.retrieve(invoiceID)
-        console.log(JSON.stringify(paymentIntent))
+
+        // Security Enhancement: Do not log the full payment intent (which contains financial/PII data)
         const errorMessage =
           typeof paymentIntent === "object" && paymentIntent !== null
             ? paymentIntent.last_payment_error?.message
