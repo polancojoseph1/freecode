@@ -52,49 +52,6 @@ export default {
           clientID: Resource.GOOGLE_CLIENT_ID.value,
           scopes: ["openid", "email"],
         }),
-        //        email: CodeProvider({
-        //          async request(req, state, form, error) {
-        //            console.log(state)
-        //            const params = new URLSearchParams()
-        //            if (error) {
-        //              params.set("error", error.type)
-        //            }
-        //            if (state.type === "start") {
-        //              return Response.redirect(process.env.AUTH_FRONTEND_URL + "/auth/email?" + params.toString(), 302)
-        //            }
-        //
-        //            if (state.type === "code") {
-        //              return Response.redirect(process.env.AUTH_FRONTEND_URL + "/auth/code?" + params.toString(), 302)
-        //            }
-        //
-        //            return new Response("ok")
-        //          },
-        //          async sendCode(claims, code) {
-        //            const email = z.string().email().parse(claims.email)
-        //            const cmd = new SendEmailCommand({
-        //              Destination: {
-        //                ToAddresses: [email],
-        //              },
-        //              FromEmailAddress: `SST <auth@${Resource.Email.sender}>`,
-        //              Content: {
-        //                Simple: {
-        //                  Body: {
-        //                    Html: {
-        //                      Data: `Your pin code is <strong>${code}</strong>`,
-        //                    },
-        //                    Text: {
-        //                      Data: `Your pin code is ${code}`,
-        //                    },
-        //                  },
-        //                  Subject: {
-        //                    Data: "SST Console Pin Code: " + code,
-        //                  },
-        //                },
-        //              },
-        //            })
-        //            await ses.send(cmd)
-        //          },
-        //        }),
       },
       storage: CloudflareStorage({
         // @ts-ignore
