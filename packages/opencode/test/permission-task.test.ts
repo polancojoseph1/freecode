@@ -85,7 +85,7 @@ describe("PermissionNext.disabled for task tool", () => {
       "orchestrator-*": "allow",
       "*": "deny",
     })
-    const disabled = PermissionNext.disabled(["task", "shell", "read"], ruleset)
+    const disabled = PermissionNext.disabled(["task", "bash", "read"], ruleset)
     // The task tool IS disabled because there's a pattern: "*" with action: "deny"
     expect(disabled.has("task")).toBe(true)
   })
@@ -239,12 +239,12 @@ describe("permission.task with real config files", () => {
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
 
         // Verify other tool permissions
-        expect(PermissionNext.evaluate("shell", "*", ruleset).action).toBe("allow")
+        expect(PermissionNext.evaluate("bash", "*", ruleset).action).toBe("allow")
         expect(PermissionNext.evaluate("edit", "*", ruleset).action).toBe("ask")
 
         // Verify disabled tools
-        const disabled = PermissionNext.disabled(["shell", "edit", "task"], ruleset)
-        expect(disabled.has("shell")).toBe(false)
+        const disabled = PermissionNext.disabled(["bash", "edit", "task"], ruleset)
+        expect(disabled.has("bash")).toBe(false)
         expect(disabled.has("edit")).toBe(false)
         // task is NOT disabled because disabled() uses findLast, and the last rule
         // matching "task" permission is {pattern: "general", action: "allow"}, not pattern: "*"

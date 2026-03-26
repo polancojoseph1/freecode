@@ -389,7 +389,7 @@ describe("acp.agent event subscription", () => {
             properties: {
               id: "perm_1",
               sessionID: sessionA,
-              permission: "shell",
+              permission: "bash",
               patterns: ["*"],
               metadata: {},
               always: [],
@@ -448,7 +448,7 @@ describe("acp.agent event subscription", () => {
             properties: {
               id: "perm_a",
               sessionID: sessionA,
-              permission: "shell",
+              permission: "bash",
               patterns: ["*"],
               metadata: {},
               always: [],
@@ -507,7 +507,7 @@ describe("acp.agent event subscription", () => {
           controller.push(
             toolEvent(sessionId, cwd, {
               callID: "call_1",
-              tool: "shell",
+              tool: "bash",
               status: "running",
               input,
               metadata: { output },
@@ -539,7 +539,7 @@ describe("acp.agent event subscription", () => {
         controller.push(
           toolEvent(sessionId, cwd, {
             callID: "call_bash",
-            tool: "shell",
+            tool: "bash",
             status: "running",
             input: { command: "echo hi", description: "run command" },
             metadata: { output: "hi\n" },
@@ -593,7 +593,7 @@ describe("acp.agent event subscription", () => {
                 {
                   type: "tool",
                   callID: "call_1",
-                  tool: "shell",
+                  tool: "bash",
                   state: {
                     status: "running",
                     input,
@@ -610,7 +610,7 @@ describe("acp.agent event subscription", () => {
         controller.push(
           toolEvent(sessionId, cwd, {
             callID: "call_1",
-            tool: "shell",
+            tool: "bash",
             status: "running",
             input,
             metadata: { output: "hi\nthere\n" },
@@ -644,7 +644,7 @@ describe("acp.agent event subscription", () => {
         controller.push(
           toolEvent(sessionId, cwd, {
             callID: "call_1",
-            tool: "shell",
+            tool: "bash",
             status: "running",
             input,
             metadata: { output: "a" },
@@ -653,7 +653,7 @@ describe("acp.agent event subscription", () => {
         controller.push(
           toolEvent(sessionId, cwd, {
             callID: "call_1",
-            tool: "shell",
+            tool: "bash",
             status: "pending",
             input,
             raw: '{"command":"echo hello"}',
@@ -662,7 +662,7 @@ describe("acp.agent event subscription", () => {
         controller.push(
           toolEvent(sessionId, cwd, {
             callID: "call_1",
-            tool: "shell",
+            tool: "bash",
             status: "running",
             input,
             metadata: { output: "a" },

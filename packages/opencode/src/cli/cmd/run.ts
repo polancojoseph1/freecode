@@ -418,7 +418,7 @@ export const RunCommand = cmd({
     async function execute(sdk: OpencodeClient) {
       function tool(part: ToolPart) {
         try {
-          if (part.tool === "shell") return shell(props<typeof ShellTool>(part))
+          if (part.tool === "bash") return shell(props<typeof ShellTool>(part))
           if (part.tool === "glob") return glob(props<typeof GlobTool>(part))
           if (part.tool === "grep") return grep(props<typeof GrepTool>(part))
           if (part.tool === "list") return list(props<typeof ListTool>(part))

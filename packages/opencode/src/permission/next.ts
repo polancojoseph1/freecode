@@ -47,8 +47,8 @@ export namespace PermissionNext {
   export function fromConfig(permission: Config.Permission) {
     const ruleset: Ruleset = []
     for (let [key, value] of Object.entries(permission)) {
-      if (key === "bash") {
-        key = "shell"
+      if (key === "shell") {
+        key = "bash"
       }
 
       if (typeof value === "string") {

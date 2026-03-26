@@ -1523,7 +1523,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
   return (
     <Show when={!shouldHide()}>
       <Switch>
-        <Match when={props.part.tool === "shell"}>
+        <Match when={props.part.tool === "bash"}>
           <Shell {...toolprops} />
         </Match>
         <Match when={props.part.tool === "glob"}>

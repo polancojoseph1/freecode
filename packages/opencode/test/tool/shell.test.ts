@@ -64,7 +64,7 @@ describe("tool.bash permissions", () => {
           testCtx,
         )
         expect(requests.length).toBe(1)
-        expect(requests[0].permission).toBe("shell")
+        expect(requests[0].permission).toBe("bash")
         expect(requests[0].patterns).toContain("echo hello")
       },
     })
@@ -91,7 +91,7 @@ describe("tool.bash permissions", () => {
           testCtx,
         )
         expect(requests.length).toBe(1)
-        expect(requests[0].permission).toBe("shell")
+        expect(requests[0].permission).toBe("bash")
         expect(requests[0].patterns).toContain("echo foo")
         expect(requests[0].patterns).toContain("echo bar")
       },
@@ -264,7 +264,7 @@ describe("tool.bash permissions", () => {
           },
           testCtx,
         )
-        const shellReq = requests.find((r) => r.permission === "shell")
+        const shellReq = requests.find((r) => r.permission === "bash")
         expect(shellReq).toBeUndefined()
       },
     })
@@ -284,7 +284,7 @@ describe("tool.bash permissions", () => {
           },
         }
         await shell.execute({ command: "cat > /tmp/output.txt", description: "Redirect ls output" }, testCtx)
-        const shellReq = requests.find((r) => r.permission === "shell")
+        const shellReq = requests.find((r) => r.permission === "bash")
         expect(shellReq).toBeDefined()
         expect(shellReq!.patterns).toContain("cat > /tmp/output.txt")
       },
@@ -305,7 +305,7 @@ describe("tool.bash permissions", () => {
           },
         }
         await shell.execute({ command: "ls -la", description: "List" }, testCtx)
-        const shellReq = requests.find((r) => r.permission === "shell")
+        const shellReq = requests.find((r) => r.permission === "bash")
         expect(shellReq).toBeDefined()
         const pattern = shellReq!.always[0]
         expect(pattern).toBe("ls *")

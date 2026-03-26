@@ -52,7 +52,7 @@ const parser = lazy(async () => {
 })
 
 // TODO: we may wanna rename this tool so it works better on other shells
-export const ShellTool = Tool.define("shell", async () => {
+export const ShellTool = Tool.define("bash", async () => {
   const shell = Shell.acceptable()
   log.info("shell tool using shell", { shell })
 
@@ -152,7 +152,7 @@ export const ShellTool = Tool.define("shell", async () => {
 
       if (patterns.size > 0) {
         await ctx.ask({
-          permission: "shell",
+          permission: "bash",
           patterns: Array.from(patterns),
           always: Array.from(always),
           metadata: {},

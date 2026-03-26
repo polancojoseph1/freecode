@@ -285,7 +285,7 @@ export namespace ACP {
                 const content: ToolCallContent[] = []
                 if (output) {
                   const hash = Hash.fast(output)
-                  if (part.tool === "shell") {
+                  if (part.tool === "bash") {
                     if (this.shellSnapshots.get(part.callID) === hash) {
                       await this.connection
                         .sessionUpdate({
@@ -1081,7 +1081,7 @@ export namespace ACP {
     }
 
     private shellOutput(part: ToolPart) {
-      if (part.tool !== "shell") return
+      if (part.tool !== "bash") return
       if (!("metadata" in part.state) || !part.state.metadata || typeof part.state.metadata !== "object") return
       const output = part.state.metadata["output"]
       if (typeof output !== "string") return
@@ -1483,7 +1483,7 @@ export namespace ACP {
   function toToolKind(toolName: string): ToolKind {
     const tool = toolName.toLocaleLowerCase()
     switch (tool) {
-      case "shell":
+      case "bash":
         return "execute"
       case "webfetch":
         return "fetch"
@@ -1518,7 +1518,7 @@ export namespace ACP {
       case "glob":
       case "grep":
         return input["path"] ? [{ path: input["path"] }] : []
-      case "shell":
+      case "bash":
         return []
       case "list":
         return input["path"] ? [{ path: input["path"] }] : []
