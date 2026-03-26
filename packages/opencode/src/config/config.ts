@@ -208,8 +208,11 @@ export namespace Config {
     // which would fail on system directories requiring elevated permissions
     // This way it only loads config file and not skills/plugins/commands
     if (existsSync(managedDir)) {
-      for (const file of ["freecode.jsonc", "freecode.json"]) {
-        result = mergeConfigConcatArrays(result, await loadFile(path.join(managedDir, file)))
+      const managedConfigs = await Promise.all(
+        ["freecode.jsonc", "freecode.json"].map(file => loadFile(path.join(managedDir, file)))
+      )
+      for (const config of managedConfigs) {
+        result = mergeConfigConcatArrays(result, config)
       }
     }
 
