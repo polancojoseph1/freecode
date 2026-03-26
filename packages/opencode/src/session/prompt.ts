@@ -271,6 +271,145 @@ export namespace SessionPrompt {
     return
   }
 
+  export async function invokeTool(input: {
+    sessionID: SessionID
+    parentID: MessageID
+    toolID: string
+    toolArgs: any
+    model: Provider.Model
+    agent: string
+    variant?: string
+    abort: AbortSignal
+    messages: MessageV2.WithParts[]
+    execute: (args: any, ctx: Tool.Context) => Promise<any>
+    onSummary?: (result: any) => Promise<void>
+  }) {
+    const { sessionID, parentID, toolID, toolArgs, model, agent, variant, abort, messages, execute, onSummary } = input
+
+    const assistantMessage = (await Session.updateMessage({
+      id: MessageID.ascending(),
+      role: "assistant",
+      parentID,
+      sessionID,
+      mode: agent,
+      agent,
+      variant,
+      path: {
+        cwd: Instance.directory,
+        root: Instance.worktree,
+      },
+      cost: 0,
+      tokens: {
+        input: 0,
+        output: 0,
+        reasoning: 0,
+        cache: { read: 0, write: 0 },
+      },
+      modelID: model.id,
+      providerID: model.providerID,
+      time: {
+        created: Date.now(),
+      },
+    })) as MessageV2.Assistant
+
+    let part = (await Session.updatePart({
+      id: PartID.ascending(),
+      messageID: assistantMessage.id,
+      sessionID,
+      type: "tool",
+      callID: ulid(),
+      tool: toolID,
+      state: {
+        status: "running",
+        input: toolArgs,
+        time: {
+          start: Date.now(),
+        },
+      },
+    })) as MessageV2.ToolPart
+
+    let executionError: Error | undefined
+    const taskAgent = await Agent.get(agent)
+    const session = await Session.get(sessionID)
+
+    const ctx: Tool.Context = {
+      agent,
+      messageID: assistantMessage.id,
+      sessionID,
+      abort,
+      callID: part.callID,
+      extra: { bypassAgentCheck: true },
+      messages,
+      async metadata(metadataInput) {
+        part = (await Session.updatePart({
+          ...part,
+          type: "tool",
+          state: {
+            ...part.state,
+            ...metadataInput,
+          },
+        } satisfies MessageV2.ToolPart)) as MessageV2.ToolPart
+      },
+      async ask(req) {
+        await PermissionNext.ask({
+          ...req,
+          sessionID,
+          ruleset: PermissionNext.merge(taskAgent.permission, session.permission ?? []),
+        })
+      },
+    }
+
+    const result = await ToolInvoke.execute(toolID, toolArgs, ctx, execute).catch((error) => {
+      executionError = error
+      log.error(`tool execution failed (${toolID})`, { error, agent })
+      return undefined
+    })
+
+    assistantMessage.finish = "tool-calls"
+    assistantMessage.time.completed = Date.now()
+    await Session.updateMessage(assistantMessage)
+
+    if (result && part.state.status === "running") {
+      await Session.updatePart({
+        ...part,
+        state: {
+          status: "completed",
+          input: part.state.input,
+          title: result.title,
+          metadata: result.metadata,
+          output: result.output,
+          attachments: result.attachments,
+          time: {
+            ...part.state.time,
+            end: Date.now(),
+          },
+        },
+      } satisfies MessageV2.ToolPart)
+    }
+
+    if (!result) {
+      await Session.updatePart({
+        ...part,
+        state: {
+          status: "error",
+          error: executionError ? `Tool execution failed: ${executionError.message}` : "Tool execution failed",
+          time: {
+            start: part.state.status === "running" ? part.state.time.start : Date.now(),
+            end: Date.now(),
+          },
+          metadata: "metadata" in part.state ? part.state.metadata : undefined,
+          input: part.state.input,
+        },
+      } satisfies MessageV2.ToolPart)
+    }
+
+    if (onSummary) {
+      await onSummary(result)
+    }
+
+    return { assistantMessage, part, result, executionError }
+  }
+
   export const LoopInput = z.object({
     sessionID: SessionID.zod,
     resume_existing: z.boolean().optional(),
@@ -352,158 +491,54 @@ export namespace SessionPrompt {
       const task = tasks.pop()
 
       // pending subtask
-      // TODO: centralize "invoke tool" logic
       if (task?.type === "subtask") {
         const taskTool = await TaskTool.init()
         const taskModel = task.model ? await Provider.getModel(task.model.providerID, task.model.modelID) : model
-        const assistantMessage = (await Session.updateMessage({
-          id: MessageID.ascending(),
-          role: "assistant",
-          parentID: lastUser.id,
+
+        await invokeTool({
           sessionID,
-          mode: task.agent,
+          parentID: lastUser.id,
+          toolID: TaskTool.id,
+          toolArgs: {
+            prompt: task.prompt,
+            description: task.description,
+            subagent_type: task.agent,
+            command: task.command,
+            parts: task.parts,
+          },
+          model: taskModel,
           agent: task.agent,
           variant: lastUser.variant,
-          path: {
-            cwd: Instance.directory,
-            root: Instance.worktree,
-          },
-          cost: 0,
-          tokens: {
-            input: 0,
-            output: 0,
-            reasoning: 0,
-            cache: { read: 0, write: 0 },
-          },
-          modelID: taskModel.id,
-          providerID: taskModel.providerID,
-          time: {
-            created: Date.now(),
-          },
-        })) as MessageV2.Assistant
-        let part = (await Session.updatePart({
-          id: PartID.ascending(),
-          messageID: assistantMessage.id,
-          sessionID: assistantMessage.sessionID,
-          type: "tool",
-          callID: ulid(),
-          tool: TaskTool.id,
-          state: {
-            status: "running",
-            input: {
-              prompt: task.prompt,
-              description: task.description,
-              subagent_type: task.agent,
-              command: task.command,
-            },
-            time: {
-              start: Date.now(),
-            },
-          },
-        })) as MessageV2.ToolPart
-        const taskArgs = {
-          prompt: task.prompt,
-          description: task.description,
-          subagent_type: task.agent,
-          command: task.command,
-          parts: task.parts,
-        }
-
-        let executionError: Error | undefined
-        const taskAgent = await Agent.get(task.agent)
-        const taskCtx: Tool.Context = {
-          agent: task.agent,
-          messageID: assistantMessage.id,
-          sessionID: sessionID,
           abort,
-          callID: part.callID,
-          extra: { bypassAgentCheck: true },
           messages: msgs,
-          async metadata(input) {
-            part = (await Session.updatePart({
-              ...part,
-              type: "tool",
-              state: {
-                ...part.state,
-                ...input,
-              },
-            } satisfies MessageV2.ToolPart)) as MessageV2.ToolPart
-          },
-          async ask(req) {
-            await PermissionNext.ask({
-              ...req,
-              sessionID: sessionID,
-              ruleset: PermissionNext.merge(taskAgent.permission, session.permission ?? []),
-            })
-          },
-        }
-
-        const result = await ToolInvoke.execute("task", taskArgs, taskCtx, (args, ctx) => taskTool.execute(args, ctx)).catch((error) => {
-          executionError = error
-          log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
-          return undefined
-        })
-
-        assistantMessage.finish = "tool-calls"
-        assistantMessage.time.completed = Date.now()
-        await Session.updateMessage(assistantMessage)
-        if (result && part.state.status === "running") {
-          await Session.updatePart({
-            ...part,
-            state: {
-              status: "completed",
-              input: part.state.input,
-              title: result.title,
-              metadata: result.metadata,
-              output: result.output,
-              attachments: result.attachments,
-              time: {
-                ...part.state.time,
-                end: Date.now(),
-              },
-            },
-          } satisfies MessageV2.ToolPart)
-        }
-        if (!result) {
-          await Session.updatePart({
-            ...part,
-            state: {
-              status: "error",
-              error: executionError ? `Tool execution failed: ${executionError.message}` : "Tool execution failed",
-              time: {
-                start: part.state.status === "running" ? part.state.time.start : Date.now(),
-                end: Date.now(),
-              },
-              metadata: "metadata" in part.state ? part.state.metadata : undefined,
-              input: part.state.input,
-            },
-          } satisfies MessageV2.ToolPart)
-        }
-
-        if (task.command) {
-          // Add synthetic user message to prevent certain reasoning models from erroring
-          // If we create assistant messages w/ out user ones following mid loop thinking signatures
-          // will be missing and it can cause errors for models like gemini for example
-          const summaryUserMsg: MessageV2.User = {
-            id: MessageID.ascending(),
-            sessionID,
-            role: "user",
-            time: {
-              created: Date.now(),
-            },
-            agent: lastUser.agent,
-            model: lastUser.model,
+          execute: (args, ctx) => taskTool.execute(args, ctx),
+          onSummary: async (result) => {
+            if (task.command) {
+              // Add synthetic user message to prevent certain reasoning models from erroring
+              // If we create assistant messages w/ out user ones following mid loop thinking signatures
+              // will be missing and it can cause errors for models like gemini for example
+              const summaryUserMsg: MessageV2.User = {
+                id: MessageID.ascending(),
+                sessionID,
+                role: "user",
+                time: {
+                  created: Date.now(),
+                },
+                agent: lastUser!.agent,
+                model: lastUser!.model,
+              }
+              await Session.updateMessage(summaryUserMsg)
+              await Session.updatePart({
+                id: PartID.ascending(),
+                messageID: summaryUserMsg.id,
+                sessionID,
+                type: "text",
+                text: "Summarize the task tool output above and continue with your task.",
+                synthetic: true,
+              } satisfies MessageV2.TextPart)
+            }
           }
-          await Session.updateMessage(summaryUserMsg)
-          await Session.updatePart({
-            id: PartID.ascending(),
-            messageID: summaryUserMsg.id,
-            sessionID,
-            type: "text",
-            text: "Summarize the task tool output above and continue with your task.",
-            synthetic: true,
-          } satisfies MessageV2.TextPart)
-        }
+        })
 
         continue
       }
