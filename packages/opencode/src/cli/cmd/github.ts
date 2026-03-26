@@ -1,5 +1,5 @@
 import path from "path"
-import { exec } from "child_process"
+import open from "open"
 import { Filesystem } from "../../util/filesystem"
 import * as prompts from "@clack/prompts"
 import { map, pipe, sortBy, values } from "remeda"
@@ -326,18 +326,11 @@ export const GithubInstallCommand = cmd({
 
             // Open browser
             const url = "https://github.com/apps/freecode-agent"
-            const command =
-              process.platform === "darwin"
-                ? `open "${url}"`
-                : process.platform === "win32"
-                  ? `start "" "${url}"`
-                  : `xdg-open "${url}"`
-
-            exec(command, (error) => {
-              if (error) {
-                prompts.log.warn(`Could not open browser. Please visit: ${url}`)
-              }
-            })
+            try {
+              await open(url)
+            } catch (error) {
+              prompts.log.warn(`Could not open browser. Please visit: ${url}`)
+            }
 
             // Wait for installation
             s.message("Waiting for GitHub app to be installed")
