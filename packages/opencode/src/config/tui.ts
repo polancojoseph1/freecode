@@ -40,8 +40,9 @@ export namespace TuiConfig {
 
     let result: Info = {}
 
-    for (const file of ConfigPaths.fileInDirectory(Global.Path.config, "tui")) {
-      result = mergeInfo(result, await loadFile(file))
+    const globalPromises = ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file))
+    for (const info of await Promise.all(globalPromises)) {
+      result = mergeInfo(result, info)
     }
 
     if (custom) {
@@ -49,20 +50,26 @@ export namespace TuiConfig {
       log.debug("loaded custom tui config", { path: custom })
     }
 
-    for (const file of projectFiles) {
-      result = mergeInfo(result, await loadFile(file))
+    const projectPromises = projectFiles.map((file) => loadFile(file))
+    for (const info of await Promise.all(projectPromises)) {
+      result = mergeInfo(result, info)
     }
 
+    const dirPromises = []
     for (const dir of unique(directories)) {
       if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
       for (const file of ConfigPaths.fileInDirectory(dir, "tui")) {
-        result = mergeInfo(result, await loadFile(file))
+        dirPromises.push(loadFile(file))
       }
+    }
+    for (const info of await Promise.all(dirPromises)) {
+      result = mergeInfo(result, info)
     }
 
     if (existsSync(managed)) {
-      for (const file of ConfigPaths.fileInDirectory(managed, "tui")) {
-        result = mergeInfo(result, await loadFile(file))
+      const managedPromises = ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
+      for (const info of await Promise.all(managedPromises)) {
+        result = mergeInfo(result, info)
       }
     }
 
