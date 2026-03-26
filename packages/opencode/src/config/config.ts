@@ -142,9 +142,14 @@ export namespace Config {
 
     for (const dir of unique(directories)) {
       if (dir.endsWith(".freecode") || dir === Flag.FREECODE_CONFIG_DIR) {
-        for (const file of ["freecode.jsonc", "freecode.json"]) {
-          log.debug(`loading config from ${path.join(dir, file)}`)
-          result = mergeConfigConcatArrays(result, await loadFile(path.join(dir, file)))
+          const loadedConfigs = await Promise.all(
+            ["freecode.jsonc", "freecode.json"].map(async (file) => {
+              log.debug(`loading config from ${path.join(dir, file)}`)
+              return await loadFile(path.join(dir, file))
+            })
+          )
+          for (const config of loadedConfigs) {
+            result = mergeConfigConcatArrays(result, config)
           // to satisfy the type checker
           result.agent ??= {}
           result.mode ??= {}
