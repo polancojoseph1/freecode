@@ -98,10 +98,11 @@ export namespace Storage {
               await Filesystem.writeJson(dest, message)
 
               log.info(`migrating parts for message ${message.id}`)
-              for (const partFile of await Glob.scan(`storage/session/part/${session.id}/${message.id}/*.json`, {
+              const partFiles = await Glob.scan(`storage/session/part/${session.id}/${message.id}/*.json`, {
                 cwd: fullProjectDir,
                 absolute: true,
-              })) {
+              })
+              await Promise.all(partFiles.map(async (partFile) => {
                 const dest = path.join(dir, "part", message.id, path.basename(partFile))
                 const part = await Filesystem.readJson(partFile)
                 log.info("copying", {
@@ -109,7 +110,7 @@ export namespace Storage {
                   dest,
                 })
                 await Filesystem.writeJson(dest, part)
-              }
+              }))
             }
           }
         }
