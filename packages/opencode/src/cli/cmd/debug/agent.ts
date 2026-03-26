@@ -28,7 +28,7 @@ export const AgentCommand = cmd({
       })
       .option("params", {
         type: "string",
-        description: "Tool params as JSON or a JS object literal",
+        description: "Tool params as JSON",
       }),
   async handler(args) {
     await bootstrap(process.cwd(), async () => {
@@ -86,7 +86,7 @@ async function resolveTools(agent: Agent.Info, availableTools: Awaited<ReturnTyp
   return resolved
 }
 
-function parseToolParams(input?: string) {
+export function parseToolParams(input?: string) {
   if (!input) return {}
   const trimmed = input.trim()
   if (trimmed.length === 0) return {}
@@ -95,13 +95,9 @@ function parseToolParams(input?: string) {
     try {
       return JSON.parse(trimmed)
     } catch (jsonError) {
-      try {
-        return new Function(`return (${trimmed})`)()
-      } catch (evalError) {
-        throw new Error(
-          `Failed to parse --params. Use JSON or a JS object literal. JSON error: ${jsonError}. Eval error: ${evalError}.`,
-        )
-      }
+      throw new Error(
+        `Failed to parse --params. Use valid JSON. JSON error: ${jsonError}.`,
+      )
     }
   })
 

@@ -4,7 +4,7 @@ import { Snapshot } from "../snapshot"
 import { MessageV2 } from "./message-v2"
 import { Session } from "."
 import { Log } from "../util/log"
-import { Database, eq } from "../storage/db"
+import { Database, eq, inArray } from "../storage/db"
 import { MessageTable, PartTable } from "./session.sql"
 import { Storage } from "@/storage/storage"
 import { Bus } from "../bus"
@@ -112,10 +112,14 @@ export namespace SessionRevert {
       }
       remove.push(msg)
     }
-    for (const msg of remove) {
-      Database.use((db) => db.delete(MessageTable).where(eq(MessageTable.id, msg.info.id)).run())
-      await Bus.publish(MessageV2.Event.Removed, { sessionID: sessionID, messageID: msg.info.id })
+    if (remove.length > 0) {
+      const ids = remove.map((msg) => msg.info.id)
+      Database.use((db) => db.delete(MessageTable).where(inArray(MessageTable.id, ids)).run())
+      await Promise.all(
+        remove.map((msg) => Bus.publish(MessageV2.Event.Removed, { sessionID: sessionID, messageID: msg.info.id }))
+      )
     }
+
     if (session.revert.partID && target) {
       const partID = session.revert.partID
       const removeStart = target.parts.findIndex((part) => part.id === partID)
@@ -123,13 +127,18 @@ export namespace SessionRevert {
         const preserveParts = target.parts.slice(0, removeStart)
         const removeParts = target.parts.slice(removeStart)
         target.parts = preserveParts
-        for (const part of removeParts) {
-          Database.use((db) => db.delete(PartTable).where(eq(PartTable.id, part.id)).run())
-          await Bus.publish(MessageV2.Event.PartRemoved, {
-            sessionID: sessionID,
-            messageID: target.info.id,
-            partID: part.id,
-          })
+        if (removeParts.length > 0) {
+          const partIds = removeParts.map((part) => part.id)
+          Database.use((db) => db.delete(PartTable).where(inArray(PartTable.id, partIds)).run())
+          await Promise.all(
+            removeParts.map((part) =>
+              Bus.publish(MessageV2.Event.PartRemoved, {
+                sessionID: sessionID,
+                messageID: target!.info.id,
+                partID: part.id,
+              })
+            )
+          )
         }
       }
     }
