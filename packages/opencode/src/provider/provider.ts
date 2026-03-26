@@ -29,7 +29,6 @@ import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { createOpenRouter, type LanguageModelV2 } from "@openrouter/ai-sdk-provider"
-import { createOpenaiCompatible as createGitHubCopilotOpenAICompatible } from "./sdk/copilot"
 import { createXai } from "@ai-sdk/xai"
 import { createMistral } from "@ai-sdk/mistral"
 import { createGroq } from "@ai-sdk/groq"
@@ -127,8 +126,6 @@ export namespace Provider {
     "@ai-sdk/perplexity": createPerplexity,
     "@ai-sdk/vercel": createVercel,
     "@gitlab/gitlab-ai-provider": createGitLab,
-    // @ts-ignore (TODO: kill this code so we dont have to maintain it)
-    "@ai-sdk/github-copilot": createGitHubCopilotOpenAICompatible,
   }
 
   type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>
@@ -716,6 +713,7 @@ export namespace Provider {
       cost: z.object({
         input: z.number(),
         output: z.number(),
+        reasoning: z.number().optional(),
         cache: z.object({
           read: z.number(),
           write: z.number(),
@@ -724,6 +722,7 @@ export namespace Provider {
           .object({
             input: z.number(),
             output: z.number(),
+            reasoning: z.number().optional(),
             cache: z.object({
               read: z.number(),
               write: z.number(),
@@ -779,6 +778,7 @@ export namespace Provider {
       cost: {
         input: model.cost?.input ?? 0,
         output: model.cost?.output ?? 0,
+        reasoning: model.cost?.reasoning ?? model.cost?.output ?? 0,
         cache: {
           read: model.cost?.cache_read ?? 0,
           write: model.cost?.cache_write ?? 0,
@@ -791,6 +791,7 @@ export namespace Provider {
               },
               input: model.cost.context_over_200k.input,
               output: model.cost.context_over_200k.output,
+              reasoning: model.cost.context_over_200k.reasoning ?? model.cost.context_over_200k.output ?? 0,
             }
           : undefined,
       },
@@ -961,6 +962,12 @@ export namespace Provider {
           cost: {
             input: model?.cost?.input ?? existingModel?.cost?.input ?? 0,
             output: model?.cost?.output ?? existingModel?.cost?.output ?? 0,
+            reasoning:
+              model?.cost?.reasoning ??
+              existingModel?.cost?.reasoning ??
+              model?.cost?.output ??
+              existingModel?.cost?.output ??
+              0,
             cache: {
               read: model?.cost?.cache_read ?? existingModel?.cost?.cache.read ?? 0,
               write: model?.cost?.cache_write ?? existingModel?.cost?.cache.write ?? 0,

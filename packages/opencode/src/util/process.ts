@@ -84,12 +84,12 @@ export namespace Process {
         if (timer) clearTimeout(timer)
       }
 
-      proc.once("exit", (code, signal) => {
+      proc.on("exit", (code, signal) => {
         done()
         resolve(code ?? (signal ? 1 : 0))
       })
 
-      proc.once("error", (error) => {
+      proc.on("error", (error) => {
         done()
         reject(error)
       })

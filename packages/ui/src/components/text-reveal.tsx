@@ -1,5 +1,4 @@
-import { createEffect, on, onCleanup, onMount } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js"
 
 const px = (value: number | string | undefined, fallback: number) => {
   if (typeof value === "number") return `${value}px`
@@ -31,18 +30,12 @@ export function TextReveal(props: {
   growOnly?: boolean
   truncate?: boolean
 }) {
-  const [state, setState] = createStore({
-    cur: props.text,
-    old: undefined as string | undefined,
-    width: "auto",
-    ready: false,
-    swapping: false,
-  })
-  const cur = () => state.cur
-  const old = () => state.old
-  const width = () => state.width
-  const ready = () => state.ready
-  const swapping = () => state.swapping
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  const [cur, setCur] = createSignal(props.text)
+  const [old, setOld] = createSignal<string | undefined>(undefined)
+  const [width, setWidth] = createSignal("auto")
+  const [ready, setReady] = createSignal(false)
+  const [swapping, setSwapping] = createSignal(false)
   let inRef: HTMLSpanElement | undefined
   let outRef: HTMLSpanElement | undefined
   let rootRef: HTMLSpanElement | undefined
@@ -57,7 +50,7 @@ export function TextReveal(props: {
       const prev = Number.parseFloat(width())
       if (Number.isFinite(prev) && next <= prev) return
     }
-    setState("width", `${next}px`)
+    setWidth(`${next}px`)
   }
 
   createEffect(
@@ -66,25 +59,25 @@ export function TextReveal(props: {
       (next, prev) => {
         if (next === prev) return
         if (typeof next === "string" && typeof prev === "string" && next.startsWith(prev)) {
-          setState("cur", next)
+          setCur(next)
           widen(win())
           return
         }
-        setState("swapping", true)
-        setState("old", prev)
-        setState("cur", next)
+        setSwapping(true)
+        setOld(prev)
+        setCur(next)
 
         if (typeof requestAnimationFrame !== "function") {
           widen(Math.max(win(), wout()))
           rootRef?.offsetHeight
-          setState("swapping", false)
+          setSwapping(false)
           return
         }
         if (frame !== undefined && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame)
         frame = requestAnimationFrame(() => {
           widen(Math.max(win(), wout()))
           rootRef?.offsetHeight
-          setState("swapping", false)
+          setSwapping(false)
           frame = undefined
         })
       },
@@ -95,16 +88,16 @@ export function TextReveal(props: {
     widen(win())
     const fonts = typeof document !== "undefined" ? document.fonts : undefined
     if (typeof requestAnimationFrame !== "function") {
-      setState("ready", true)
+      setReady(true)
       return
     }
     if (!fonts) {
-      requestAnimationFrame(() => setState("ready", true))
+      requestAnimationFrame(() => setReady(true))
       return
     }
     fonts.ready.finally(() => {
       widen(win())
-      requestAnimationFrame(() => setState("ready", true))
+      requestAnimationFrame(() => setReady(true))
     })
   })
 
