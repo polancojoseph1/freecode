@@ -8,3 +8,7 @@
 **Impact:** Allows execution of arbitrary shell commands if the URL contains shell metacharacters like `&`, `;`, or `|`.
 **Fix:** Replaced `exec` with `spawn`, passing arguments as an array to avoid shell interpretation.
 **Verification:** Verified via platform-specific simulation script.
+## 2024-03-27 - Command injection in wslPath
+**Vulnerability:** Shell command injection via unsanitized user input in `wsl -e sh -lc "wslpath..."`.
+**Learning:** Even if quotes are escaped, interpolating untrusted paths into a shell command string (`sh -c <string>`) leaves the command vulnerable to shell metacharacters like backticks or `$()`.
+**Prevention:** Pass variables as discrete arguments to `sh` and refer to them inside the shell string with `$1`, `$2`, etc.
