@@ -325,16 +325,20 @@ export function SessionTurn(
     if (working()) return null
     return showAssistantCopyPartID() ?? null
   })
-  const turnDurationMs = createMemo(() => {
-    const start = message()?.time.created
-    if (typeof start !== "number") return undefined
-
-    const end = assistantMessages().reduce<number | undefined>((max, item) => {
+  const endCompletedMs = createMemo(() => {
+    return assistantMessages().reduce<number | undefined>((max, item) => {
       const completed = item.time.completed
       if (typeof completed !== "number") return max
       if (max === undefined) return completed
       return Math.max(max, completed)
     }, undefined)
+  })
+
+  const turnDurationMs = createMemo(() => {
+    const start = message()?.time.created
+    if (typeof start !== "number") return undefined
+
+    const end = endCompletedMs()
 
     if (typeof end !== "number") return undefined
     if (end < start) return undefined
@@ -343,7 +347,14 @@ export function SessionTurn(
   const assistantVisible = createMemo(() =>
     assistantMessages().reduce((count, message) => {
       const parts = list(data.store.part?.[message.id], emptyParts)
-      return count + parts.filter((part) => partState(part, showReasoningSummaries()) === "visible").length
+      const showReasoning = showReasoningSummaries()
+      let visibleCount = 0
+      for (let i = 0; i < parts.length; i++) {
+        if (partState(parts[i]!, showReasoning) === "visible") {
+          visibleCount++
+        }
+      }
+      return count + visibleCount
     }, 0),
   )
   const assistantTailVisible = createMemo(() =>
