@@ -6,6 +6,7 @@ import { dirname, join } from "node:path"
 import readline from "node:readline"
 import { fileURLToPath } from "node:url"
 import { app } from "electron"
+import { quote } from "shell-quote"
 import treeKill from "tree-kill"
 
 import { WSL_ENABLED_KEY } from "./constants"
@@ -50,7 +51,7 @@ export function getSidecarPath() {
 }
 
 export async function getConfig(): Promise<Config | null> {
-  const { events } = spawnCommand("debug config", {})
+  const { events } = spawnCommand(["debug", "config"], {})
   let output = ""
 
   await new Promise<void>((resolve) => {
@@ -120,7 +121,7 @@ export function syncCli() {
 }
 
 export function serve(hostname: string, port: number, password: string) {
-  const args = `--print-logs --log-level WARN serve --hostname ${hostname} --port ${port}`
+  const args = ["--print-logs", "--log-level", "WARN", "serve", "--hostname", hostname, "--port", String(port)]
   const env = {
     OPENCODE_SERVER_USERNAME: "opencode",
     OPENCODE_SERVER_PASSWORD: password,
@@ -129,8 +130,8 @@ export function serve(hostname: string, port: number, password: string) {
   return spawnCommand(args, env)
 }
 
-export function spawnCommand(args: string, extraEnv: Record<string, string>) {
-  console.log(`[cli] Spawning command with args: ${args}`)
+export function spawnCommand(args: string[], extraEnv: Record<string, string>) {
+  console.log(`[cli] Spawning command with args: ${args.join(" ")}`)
   const base = Object.fromEntries(
     Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
   )
@@ -209,17 +210,18 @@ function handleSqliteProgress(events: EventEmitter, line: string) {
   return false
 }
 
-function buildCommand(args: string, env: Record<string, string>) {
+function buildCommand(args: string[], env: Record<string, string>) {
   if (process.platform === "win32" && isWslEnabled()) {
     console.log(`[cli] Using WSL mode`)
     const version = app.getVersion()
+    const escapedArgs = quote(args)
     const script = [
       "set -e",
       'BIN="$HOME/.opencode/bin/opencode"',
       'if [ ! -x "$BIN" ]; then',
       `  curl -fsSL https://opencode.ai/install | bash -s -- --version ${shellEscape(version)} --no-modify-path`,
       "fi",
-      `${envPrefix(env)} exec "$BIN" ${args}`,
+      `${envPrefix(env)} exec "$BIN" ${escapedArgs}`,
     ].join("\n")
 
     return { cmd: "wsl", cmdArgs: ["-e", "bash", "-lc", script] }
@@ -228,12 +230,13 @@ function buildCommand(args: string, env: Record<string, string>) {
   if (process.platform === "win32") {
     const sidecar = getSidecarPath()
     console.log(`[cli] Windows direct mode, sidecar: ${sidecar}`)
-    return { cmd: sidecar, cmdArgs: args.split(" ") }
+    return { cmd: sidecar, cmdArgs: args }
   }
 
   const sidecar = getSidecarPath()
   const shell = process.env.SHELL || "/bin/sh"
-  const line = shell.endsWith("/nu") ? `^\"${sidecar}\" ${args}` : `\"${sidecar}\" ${args}`
+  const escapedArgs = quote(args)
+  const line = shell.endsWith("/nu") ? `^\"${sidecar}\" ${escapedArgs}` : `\"${sidecar}\" ${escapedArgs}`
   console.log(`[cli] Unix mode, shell: ${shell}, command: ${line}`)
   return { cmd: shell, cmdArgs: ["-l", "-c", line] }
 }
