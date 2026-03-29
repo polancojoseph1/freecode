@@ -130,9 +130,11 @@ export namespace Skill {
         include: "file",
         symlink: true,
       })
-      for (const match of matches) {
-        await addSkill(match)
-      }
+      // ⚡ Bolt Performance Optimization:
+      // Replaced sequential `for...of` loop with concurrent `Promise.all`.
+      // This eliminates the N+1 synchronous read issue when loading multiple skill files,
+      // significantly improving initialization time.
+      await Promise.all(matches.map((match) => addSkill(match)))
     }
 
     // Scan additional skill paths from config
@@ -150,9 +152,8 @@ export namespace Skill {
         include: "file",
         symlink: true,
       })
-      for (const match of matches) {
-        await addSkill(match)
-      }
+      // ⚡ Bolt Performance Optimization: Concurrent skill loading
+      await Promise.all(matches.map((match) => addSkill(match)))
     }
 
     // Download and load skills from URLs
@@ -166,9 +167,8 @@ export namespace Skill {
           include: "file",
           symlink: true,
         })
-        for (const match of matches) {
-          await addSkill(match)
-        }
+        // ⚡ Bolt Performance Optimization: Concurrent skill loading
+        await Promise.all(matches.map((match) => addSkill(match)))
       }
     }
 
