@@ -29,3 +29,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-24 - [Array.reduce Hot Path Overhead]
 **Learning:** Using `Array.prototype.reduce` for frequently called length calculations (like `promptLength` evaluated on every keystroke) introduces unnecessary function allocation overhead compared to basic `for` loops.
 **Action:** For hot-path array iteration requiring high performance, prefer traditional `for` loops over `reduce` to eliminate per-element closure allocations.
+
+## 2025-03-24 - [Concurrent Async Work inside Loops]
+**Learning:** Sequential `await` calls within `for...of` loops, especially for filesystem or parsing operations, introduce significant "N+1" synchronous bottlenecks. In `skill.ts`, loading multiple `.md` files in a `for` loop caused delays that scale linearly with the number of files.
+**Action:** Use `await Promise.all(array.map(...))` to execute I/O or independent asynchronous operations concurrently instead of awaiting each iteration one by one.
