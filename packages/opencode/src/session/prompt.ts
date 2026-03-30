@@ -1530,24 +1530,26 @@ NOTE: At any point in time through this workflow you should feel free to ask the
       },
       zsh: {
         args: [
-          "-c",
-          "-l",
+          "-lc",
           `
             [[ -f ~/.zshenv ]] && source ~/.zshenv >/dev/null 2>&1 || true
             [[ -f "\${ZDOTDIR:-$HOME}/.zshrc" ]] && source "\${ZDOTDIR:-$HOME}/.zshrc" >/dev/null 2>&1 || true
-            eval ${JSON.stringify(input.command)}
+            eval "$1"
           `,
+          "--",
+          input.command,
         ],
       },
       bash: {
         args: [
-          "-c",
-          "-l",
+          "-lc",
           `
             shopt -s expand_aliases
             [[ -f ~/.bashrc ]] && source ~/.bashrc >/dev/null 2>&1 || true
-            eval ${JSON.stringify(input.command)}
+            eval "$1"
           `,
+          "--",
+          input.command,
         ],
       },
       // Windows cmd
