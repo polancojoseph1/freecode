@@ -122,8 +122,13 @@ export namespace Config {
 
     // Project config overrides global and remote config.
     if (!Flag.FREECODE_DISABLE_PROJECT_CONFIG) {
-      for (const file of await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)) {
-        result = mergeConfigConcatArrays(result, await loadFile(file))
+      // ⚡ Bolt Performance Optimization:
+      // Load all project files concurrently to avoid N+1 synchronous reads,
+      // but merge them sequentially to preserve the exact same precedence logic.
+      const projectFiles = await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)
+      const loadedProjectConfigs = await Promise.all(projectFiles.map(file => loadFile(file)))
+      for (const config of loadedProjectConfigs) {
+        result = mergeConfigConcatArrays(result, config)
       }
     }
 
@@ -142,9 +147,15 @@ export namespace Config {
 
     for (const dir of unique(directories)) {
       if (dir.endsWith(".freecode") || dir === Flag.FREECODE_CONFIG_DIR) {
-        for (const file of ["freecode.jsonc", "freecode.json"]) {
-          log.debug(`loading config from ${path.join(dir, file)}`)
-          result = mergeConfigConcatArrays(result, await loadFile(path.join(dir, file)))
+        // ⚡ Bolt Performance Optimization:
+        // Load config files in the directory concurrently but merge sequentially.
+        const filesToLoad = ["freecode.jsonc", "freecode.json"].map(file => path.join(dir, file))
+        const loadedConfigs = await Promise.all(filesToLoad.map(async file => {
+          log.debug(`loading config from ${file}`)
+          return loadFile(file)
+        }))
+        for (const config of loadedConfigs) {
+          result = mergeConfigConcatArrays(result, config)
           // to satisfy the type checker
           result.agent ??= {}
           result.mode ??= {}
