@@ -122,8 +122,10 @@ export namespace Config {
 
     // Project config overrides global and remote config.
     if (!Flag.FREECODE_DISABLE_PROJECT_CONFIG) {
-      for (const file of await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)) {
-        result = mergeConfigConcatArrays(result, await loadFile(file))
+      const projectFiles = await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)
+      const projectPromises = projectFiles.map((file) => loadFile(file))
+      for (const config of await Promise.all(projectPromises)) {
+        result = mergeConfigConcatArrays(result, config)
       }
     }
 
@@ -140,18 +142,19 @@ export namespace Config {
 
     const deps = []
 
-    for (const dir of unique(directories)) {
+    // Map each directory to a promise that resolves all its necessary configuration data.
+    // This correctly handles concurrency without dangling promises.
+    const directoryDataPromises = unique(directories).map(async (dir) => {
+      // Create file load promises for the directory
+      const filePromises: { file: string; promise: Promise<Info> }[] = []
       if (dir.endsWith(".freecode") || dir === Flag.FREECODE_CONFIG_DIR) {
         for (const file of ["freecode.jsonc", "freecode.json"]) {
-          log.debug(`loading config from ${path.join(dir, file)}`)
-          result = mergeConfigConcatArrays(result, await loadFile(path.join(dir, file)))
-          // to satisfy the type checker
-          result.agent ??= {}
-          result.mode ??= {}
-          result.plugin ??= []
+          const filePath = path.join(dir, file)
+          filePromises.push({ file: filePath, promise: loadFile(filePath) })
         }
       }
 
+      // Add to dependencies
       deps.push(
         iife(async () => {
           const shouldInstall = await needsInstall(dir)
@@ -159,10 +162,48 @@ export namespace Config {
         }),
       )
 
-      result.command = mergeDeep(result.command ?? {}, await loadCommand(dir))
-      result.agent = mergeDeep(result.agent, await loadAgent(dir))
-      result.agent = mergeDeep(result.agent, await loadMode(dir))
-      result.plugin.push(...(await loadPlugin(dir)))
+      // Concurrently wait for all data related to this directory
+      const [resolvedFiles, command, agent, mode, plugin] = await Promise.all([
+        Promise.all(
+          filePromises.map(async ({ file, promise }) => {
+            const data = await promise
+            return { file, data }
+          }),
+        ),
+        loadCommand(dir),
+        loadAgent(dir),
+        loadMode(dir),
+        loadPlugin(dir),
+      ])
+
+      return {
+        dir,
+        resolvedFiles,
+        command,
+        agent,
+        mode,
+        plugin,
+      }
+    })
+
+    // Resolve all directories concurrently, but preserve their specific order
+    const resolvedDirectories = await Promise.all(directoryDataPromises)
+
+    // Merge everything sequentially according to the original array order
+    for (const dirData of resolvedDirectories) {
+      for (const { file, data } of dirData.resolvedFiles) {
+        log.debug(`loading config from ${file}`)
+        result = mergeConfigConcatArrays(result, data)
+        // to satisfy the type checker
+        result.agent ??= {}
+        result.mode ??= {}
+        result.plugin ??= []
+      }
+
+      result.command = mergeDeep(result.command ?? {}, dirData.command)
+      result.agent = mergeDeep(result.agent, dirData.agent)
+      result.agent = mergeDeep(result.agent, dirData.mode)
+      result.plugin.push(...dirData.plugin)
     }
 
     // Inline config content overrides all non-managed config sources.

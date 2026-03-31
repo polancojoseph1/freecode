@@ -33,3 +33,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-24 - [Concurrent Async Work inside Loops]
 **Learning:** Sequential `await` calls within `for...of` loops, especially for filesystem or parsing operations, introduce significant "N+1" synchronous bottlenecks. In `skill.ts`, loading multiple `.md` files in a `for` loop caused delays that scale linearly with the number of files.
 **Action:** Use `await Promise.all(array.map(...))` to execute I/O or independent asynchronous operations concurrently instead of awaiting each iteration one by one.
+
+## 2025-03-31 - [Config Concurrent Merging Regression]
+**Learning:** Kicking off arrays of raw promises sequentially in a loop and awaiting them later introduces dangling promises, leading to potential unhandled promise rejections (crashing the Node app) if any of those fetches fail before their exact `await` block in the second loop is hit.
+**Action:** When parallelizing sequential array iterations that involve deep merging (like configuration loading), map the items directly into a single `Promise.all` to ensure all rejections are gracefully trapped without unhandled rejections, then merge the awaited results sequentially to preserve strict precedence order.
