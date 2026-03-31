@@ -140,7 +140,7 @@ export namespace Config {
       log.debug("loading config from FREECODE_CONFIG_DIR", { path: Flag.FREECODE_CONFIG_DIR })
     }
 
-    const deps = []
+    const deps: Promise<void>[] = []
 
     // Map each directory to a promise that resolves all its necessary configuration data.
     // This correctly handles concurrency without dangling promises.
