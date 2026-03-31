@@ -16,7 +16,12 @@
 **Vulnerability:** Found a command injection vulnerability where a string array `args` was directly concatenated into a shell command for execution (e.g., ``"sh -c \"sidecar\" " + args``) in `packages/desktop-electron/src/main/cli.ts`.
 **Learning:** Using `spawn` or `execFile` with an options array directly is preferred over passing an entire string to `sh -c`. If executing via a shell wrapper like `sh -c` is necessary, it is critical to correctly escape all user-influenced string arguments before interpolating them into the final shell command to prevent injection.
 **Prevention:** Use a proven library like `shell-quote` to escape array elements before concatenating them into shell script strings, or prefer passing discrete arguments directly to the spawn function instead of interpolating into a shell wrapper.
-## $(date +%Y-%m-%d) - Prevent Unsafe URL Schemes in shell.openExternal
+## 2024-04-18 - Prevent Unsafe URL Schemes in shell.openExternal
 **Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
 **Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
 **Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
+
+## 2024-04-18 - Command Injection in open-path IPC Handler
+**Vulnerability:** The Electron `ipcMain` handler for `open-path` received an unsanitized `app` string from the renderer and passed it directly to `execFile` as the binary to execute. This enabled a compromised or malicious renderer to execute arbitrary binaries and commands on the host machine.
+**Learning:** Unrestricted IPC endpoints that execute commands based on arguments supplied by the renderer act as a bridge for command injection and arbitrary code execution vulnerabilities. Always treat IPC payloads as untrusted user input.
+**Prevention:** Before executing an application passed via IPC, validate it against an allowlist, or use built-in domain validation mechanisms like `deps.checkAppExists` and `deps.resolveAppPath` to ensure only safe, permitted applications are executed.
