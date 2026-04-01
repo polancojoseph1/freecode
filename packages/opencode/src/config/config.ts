@@ -122,8 +122,10 @@ export namespace Config {
 
     // Project config overrides global and remote config.
     if (!Flag.FREECODE_DISABLE_PROJECT_CONFIG) {
-      for (const file of await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)) {
-        result = mergeConfigConcatArrays(result, await loadFile(file))
+      const projectFiles = await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)
+      const projectConfigs = await Promise.all(projectFiles.map((file) => loadFile(file)))
+      for (const config of projectConfigs) {
+        result = mergeConfigConcatArrays(result, config)
       }
     }
 
@@ -1270,11 +1272,16 @@ export namespace Config {
   export type Info = z.output<typeof Info>
 
   export const global = lazy(async () => {
+    const [configJson, freecodeJson, freecodeJsonc] = await Promise.all([
+      loadFile(path.join(Global.Path.config, "config.json")),
+      loadFile(path.join(Global.Path.config, "freecode.json")),
+      loadFile(path.join(Global.Path.config, "freecode.jsonc")),
+    ])
     let result: Info = pipe(
       {},
-      mergeDeep(await loadFile(path.join(Global.Path.config, "config.json"))),
-      mergeDeep(await loadFile(path.join(Global.Path.config, "freecode.json"))),
-      mergeDeep(await loadFile(path.join(Global.Path.config, "freecode.jsonc"))),
+      mergeDeep(configJson),
+      mergeDeep(freecodeJson),
+      mergeDeep(freecodeJsonc),
     )
 
     const legacy = path.join(Global.Path.config, "config")

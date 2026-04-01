@@ -33,3 +33,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-24 - [Concurrent Async Work inside Loops]
 **Learning:** Sequential `await` calls within `for...of` loops, especially for filesystem or parsing operations, introduce significant "N+1" synchronous bottlenecks. In `skill.ts`, loading multiple `.md` files in a `for` loop caused delays that scale linearly with the number of files.
 **Action:** Use `await Promise.all(array.map(...))` to execute I/O or independent asynchronous operations concurrently instead of awaiting each iteration one by one.
+
+## 2026-04-01 - [Concurrent I/O in Config Loaders]
+**Learning:** Sequential `await` loops for file I/O operations (e.g., `loadFile` calls in `config.ts`) create significant initialization bottlenecks due to N+1 synchronous reads.
+**Action:** Use `Promise.all()` to read configuration files concurrently before merging them sequentially to maintain expected override order.
