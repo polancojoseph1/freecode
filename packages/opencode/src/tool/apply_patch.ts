@@ -227,16 +227,22 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
     }
 
     // Publish file change events
-    for (const update of updates) {
-      await Bus.publish(FileWatcher.Event.Updated, update)
-    }
+    // ⚡ Bolt Performance Optimization:
+    // Replaced sequential await inside a for...of loop with Promise.all
+    // Expected impact: Eliminates N+1 synchronous delays. For a patch updating 10 files, this reduces publishing time linearly from ~10x to ~1x the time of a single bus publish.
+    await Promise.all(updates.map(update => Bus.publish(FileWatcher.Event.Updated, update)))
 
     // Notify LSP of file changes and collect diagnostics
-    for (const change of fileChanges) {
-      if (change.type === "delete") continue
-      const target = change.movePath ?? change.filePath
-      await LSP.touchFile(target, true)
-    }
+    // ⚡ Bolt Performance Optimization:
+    // Replaced sequential await inside a for...of loop with Promise.all
+    // Expected impact: Eliminates N+1 synchronous delays. For a patch updating 10 files, this reduces LSP touch time linearly from ~10x to ~1x.
+    await Promise.all(
+      fileChanges.map(async (change) => {
+        if (change.type === "delete") return
+        const target = change.movePath ?? change.filePath
+        await LSP.touchFile(target, true)
+      })
+    )
     const diagnostics = await LSP.diagnostics()
 
     // Generate output summary
