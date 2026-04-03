@@ -122,8 +122,10 @@ export namespace Config {
 
     // Project config overrides global and remote config.
     if (!Flag.FREECODE_DISABLE_PROJECT_CONFIG) {
-      for (const file of await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)) {
-        result = mergeConfigConcatArrays(result, await loadFile(file))
+      const projectFiles = await ConfigPaths.projectFiles("freecode", Instance.directory, Instance.worktree)
+      const projectConfigs = await Promise.all(projectFiles.map(file => loadFile(file)))
+      for (const config of projectConfigs) {
+        result = mergeConfigConcatArrays(result, config)
       }
     }
 
@@ -140,29 +142,61 @@ export namespace Config {
 
     const deps = []
 
-    for (const dir of unique(directories)) {
-      if (dir.endsWith(".freecode") || dir === Flag.FREECODE_CONFIG_DIR) {
-        for (const file of ["freecode.jsonc", "freecode.json"]) {
-          log.debug(`loading config from ${path.join(dir, file)}`)
-          result = mergeConfigConcatArrays(result, await loadFile(path.join(dir, file)))
-          // to satisfy the type checker
-          result.agent ??= {}
-          result.mode ??= {}
-          result.plugin ??= []
+    const dirResults = await Promise.all(
+      unique(directories).map(async (dir) => {
+        const fileConfigs: { file: string; config: Info }[] = []
+        if (dir.endsWith(".freecode") || dir === Flag.FREECODE_CONFIG_DIR) {
+          // Parallelize the two config files as well
+          const files = ["freecode.jsonc", "freecode.json"]
+          const loadedConfigs = await Promise.all(files.map(file => loadFile(path.join(dir, file))))
+          for (let i = 0; i < files.length; i++) {
+            fileConfigs.push({
+              file: path.join(dir, files[i]),
+              config: loadedConfigs[i],
+            })
+          }
         }
-      }
 
-      deps.push(
-        iife(async () => {
+        const shouldInstallPromise = iife(async () => {
           const shouldInstall = await needsInstall(dir)
           if (shouldInstall) await installDependencies(dir)
-        }),
-      )
+        })
 
-      result.command = mergeDeep(result.command ?? {}, await loadCommand(dir))
-      result.agent = mergeDeep(result.agent, await loadAgent(dir))
-      result.agent = mergeDeep(result.agent, await loadMode(dir))
-      result.plugin.push(...(await loadPlugin(dir)))
+        const [command, agent, mode, plugin] = await Promise.all([
+          loadCommand(dir),
+          loadAgent(dir),
+          loadMode(dir),
+          loadPlugin(dir),
+        ])
+
+        return {
+          dir,
+          fileConfigs,
+          shouldInstallPromise,
+          command,
+          agent,
+          mode,
+          plugin,
+        }
+      })
+    )
+
+    for (const res of dirResults) {
+      for (const { file, config } of res.fileConfigs) {
+        log.debug(`loading config from ${file}`)
+        result = mergeConfigConcatArrays(result, config)
+        // to satisfy the type checker
+        result.agent ??= {}
+        result.mode ??= {}
+        result.plugin ??= []
+      }
+
+      deps.push(res.shouldInstallPromise)
+
+      result.command = mergeDeep(result.command ?? {}, res.command)
+      result.agent = mergeDeep(result.agent, res.agent)
+      result.agent = mergeDeep(result.agent, res.mode)
+      result.plugin.push(...res.plugin)
     }
 
     // Inline config content overrides all non-managed config sources.
