@@ -236,7 +236,8 @@ function buildCommand(args: string[], env: Record<string, string>) {
   const sidecar = getSidecarPath()
   const shell = process.env.SHELL || "/bin/sh"
   const escapedArgs = quote(args)
-  const line = shell.endsWith("/nu") ? `^\"${sidecar}\" ${escapedArgs}` : `\"${sidecar}\" ${escapedArgs}`
+  const escapedSidecar = quote([sidecar])
+  const line = shell.endsWith("/nu") ? `^${escapedSidecar} ${escapedArgs}` : `${escapedSidecar} ${escapedArgs}`
   console.log(`[cli] Unix mode, shell: ${shell}, command: ${line}`)
   return { cmd: shell, cmdArgs: ["-l", "-c", line] }
 }
