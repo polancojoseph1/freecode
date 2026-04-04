@@ -157,8 +157,12 @@ export namespace Skill {
     }
 
     // Download and load skills from URLs
-    for (const url of config.skills?.urls ?? []) {
-      const list = await Discovery.pull(url)
+    // ⚡ Bolt Performance Optimization: Concurrent URL fetching
+    // Parallelize network requests for skill URLs to eliminate sequential I/O bottleneck
+    const urlLists = await Promise.all(
+      (config.skills?.urls ?? []).map(url => Discovery.pull(url))
+    )
+    for (const list of urlLists) {
       for (const dir of list) {
         dirs.add(dir)
         const matches = await Glob.scan(SKILL_PATTERN, {
