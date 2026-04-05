@@ -20,3 +20,8 @@
 **Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
 **Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
 **Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
+
+## $(date +%Y-%m-%d) - Arbitrary Code Execution in open-path IPC Handler
+**Vulnerability:** The `open-path` IPC handler in `packages/desktop-electron/src/main/ipc.ts` allowed a frontend renderer process to specify an arbitrary `app` string which was directly passed to `execFile` without validation.
+**Learning:** This exposes the desktop application to arbitrary command injection if an attacker can control the IPC payload from the renderer.
+**Prevention:** Always validate, sanitize, and resolve executable names/paths provided by the renderer through strict verification (e.g., using a pre-configured `deps.resolveAppPath`) before passing them to OS-level execution functions like `execFile` or `spawn`.
