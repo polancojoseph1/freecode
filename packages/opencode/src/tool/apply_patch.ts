@@ -226,17 +226,15 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
       }
     }
 
-    // Publish file change events
-    for (const update of updates) {
-      await Bus.publish(FileWatcher.Event.Updated, update)
-    }
+    // Publish file change events concurrently
+    await Promise.all(updates.map((update) => Bus.publish(FileWatcher.Event.Updated, update)))
 
-    // Notify LSP of file changes and collect diagnostics
-    for (const change of fileChanges) {
-      if (change.type === "delete") continue
-      const target = change.movePath ?? change.filePath
-      await LSP.touchFile(target, true)
-    }
+    // Notify LSP of file changes and collect diagnostics concurrently
+    const touchEvents = fileChanges
+      .filter((change) => change.type !== "delete")
+      .map((change) => LSP.touchFile(change.movePath ?? change.filePath, true))
+    await Promise.all(touchEvents)
+
     const diagnostics = await LSP.diagnostics()
 
     // Generate output summary
