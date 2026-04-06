@@ -1,5 +1,6 @@
 import { codeToHtml, bundledLanguages } from "shiki"
 import { createResource, Suspense } from "solid-js"
+import DOMPurify from "dompurify"
 import style from "./content-code.module.css"
 
 interface Props {
@@ -11,13 +12,15 @@ export function ContentCode(props: Props) {
   const [html] = createResource(
     () => [props.code, props.lang],
     async ([code, lang]) => {
-      return (await codeToHtml(code || "", {
+      const html = (await codeToHtml(code || "", {
         lang: lang && lang in bundledLanguages ? lang : "text",
         themes: {
           light: "github-light",
           dark: "github-dark",
         },
       })) as string
+      if (typeof window === "undefined") return html
+      return DOMPurify.sanitize(html)
     },
   )
   return (
