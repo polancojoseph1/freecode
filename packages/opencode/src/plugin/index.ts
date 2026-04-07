@@ -45,11 +45,16 @@ export namespace Plugin {
       $: Bun.$,
     }
 
-    for (const plugin of INTERNAL_PLUGINS) {
-      log.info("loading internal plugin", { name: plugin.name })
-      const init = await plugin(input).catch((err) => {
-        log.error("failed to load internal plugin", { name: plugin.name, error: err })
+    const internalInits = await Promise.all(
+      INTERNAL_PLUGINS.map(async (plugin) => {
+        log.info("loading internal plugin", { name: plugin.name })
+        return plugin(input).catch((err) => {
+          log.error("failed to load internal plugin", { name: plugin.name, error: err })
+          return undefined
+        })
       })
+    )
+    for (const init of internalInits) {
       if (init) hooks.push(init)
     }
 
@@ -59,48 +64,59 @@ export namespace Plugin {
       plugins = [...BUILTIN, ...plugins]
     }
 
-    for (let plugin of plugins) {
-      // ignore old codex plugin since it is supported first party now
-      if (plugin.includes("opencode-openai-codex-auth") || plugin.includes("opencode-copilot-auth")) continue
-      log.info("loading plugin", { path: plugin })
-      if (!plugin.startsWith("file://")) {
-        const lastAtIndex = plugin.lastIndexOf("@")
-        const pkg = lastAtIndex > 0 ? plugin.substring(0, lastAtIndex) : plugin
-        const version = lastAtIndex > 0 ? plugin.substring(lastAtIndex + 1) : "latest"
-        plugin = await BunProc.install(pkg, version).catch((err) => {
-          const cause = err instanceof Error ? err.cause : err
-          const detail = cause instanceof Error ? cause.message : String(cause ?? err)
-          log.error("failed to install plugin", { pkg, version, error: detail })
-          Bus.publish(Session.Event.Error, {
-            error: new NamedError.Unknown({
-              message: `Failed to install plugin ${pkg}@${version}: ${detail}`,
-            }).toObject(),
+    const pluginInits = await Promise.all(
+      plugins.map(async (plugin) => {
+        // ignore old codex plugin since it is supported first party now
+        if (plugin.includes("opencode-openai-codex-auth") || plugin.includes("opencode-copilot-auth")) return undefined
+        log.info("loading plugin", { path: plugin })
+        if (!plugin.startsWith("file://")) {
+          const lastAtIndex = plugin.lastIndexOf("@")
+          const pkg = lastAtIndex > 0 ? plugin.substring(0, lastAtIndex) : plugin
+          const version = lastAtIndex > 0 ? plugin.substring(lastAtIndex + 1) : "latest"
+          plugin = await BunProc.install(pkg, version).catch((err) => {
+            const cause = err instanceof Error ? err.cause : err
+            const detail = cause instanceof Error ? cause.message : String(cause ?? err)
+            log.error("failed to install plugin", { pkg, version, error: detail })
+            Bus.publish(Session.Event.Error, {
+              error: new NamedError.Unknown({
+                message: `Failed to install plugin ${pkg}@${version}: ${detail}`,
+              }).toObject(),
+            })
+            return ""
           })
-          return ""
-        })
-        if (!plugin) continue
+          if (!plugin) return undefined
+        }
+        // Prevent duplicate initialization when plugins export the same function
+        // as both a named export and default export (e.g., `export const X` and `export default X`).
+        // Object.entries(mod) would return both entries pointing to the same function reference.
+        return import(plugin)
+          .then(async (mod) => {
+            const seen = new Set<PluginInstance>()
+            const pluginHooks = []
+            for (const [_name, fn] of Object.entries<PluginInstance>(mod)) {
+              if (seen.has(fn)) continue
+              seen.add(fn)
+              pluginHooks.push(await fn(input))
+            }
+            return pluginHooks
+          })
+          .catch((err) => {
+            const message = err instanceof Error ? err.message : String(err)
+            log.error("failed to load plugin", { path: plugin, error: message })
+            Bus.publish(Session.Event.Error, {
+              error: new NamedError.Unknown({
+                message: `Failed to load plugin ${plugin}: ${message}`,
+              }).toObject(),
+            })
+            return undefined
+          })
+      })
+    )
+
+    for (const inits of pluginInits) {
+      if (inits) {
+        hooks.push(...inits)
       }
-      // Prevent duplicate initialization when plugins export the same function
-      // as both a named export and default export (e.g., `export const X` and `export default X`).
-      // Object.entries(mod) would return both entries pointing to the same function reference.
-      await import(plugin)
-        .then(async (mod) => {
-          const seen = new Set<PluginInstance>()
-          for (const [_name, fn] of Object.entries<PluginInstance>(mod)) {
-            if (seen.has(fn)) continue
-            seen.add(fn)
-            hooks.push(await fn(input))
-          }
-        })
-        .catch((err) => {
-          const message = err instanceof Error ? err.message : String(err)
-          log.error("failed to load plugin", { path: plugin, error: message })
-          Bus.publish(Session.Event.Error, {
-            error: new NamedError.Unknown({
-              message: `Failed to load plugin ${plugin}: ${message}`,
-            }).toObject(),
-          })
-        })
     }
 
     return {

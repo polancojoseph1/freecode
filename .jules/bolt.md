@@ -36,3 +36,6 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Parallelize Independent I/O Tasks While Maintaining Sequential Merging
 **Learning:** In deeply nested configurations like those in `config.ts`, while the merge order of config objects strictly dictates final state, the disk read and parsing I/O can still be parallelized. By returning objects mapping the path/order to the parsed config from a `Promise.all` and merging them subsequently in order, N+1 synchronous read blocking was eliminated without breaking precedence rules.
 **Action:** When working with sequential dependency resolution patterns where order matters, map the I/O into a `Promise.all` and defer the state mutation (like deep merging) into a second sequential loop over the awaited results.
+## 2025-03-09 - Parallelize Plugin Initialization
+**Learning:** Initializing plugins (both internal and external) using a sequential `for` loop inside `packages/opencode/src/plugin/index.ts` introduces unnecessary I/O bounds as external plugins are downloaded, loaded, and imported sequentially.
+**Action:** Replace sequential `await` loops inside plugin initialization loops with concurrent `Promise.all(array.map(...))` iterations to speed up system load times.
