@@ -89,12 +89,14 @@ export namespace SessionCompaction {
     }
     log.info("found", { pruned, total })
     if (pruned > PRUNE_MINIMUM) {
-      for (const part of toPrune) {
-        if (part.state.status === "completed") {
-          part.state.time.compacted = Date.now()
-          await Session.updatePart(part)
-        }
-      }
+      await Promise.all(
+        toPrune.map(async (part) => {
+          if (part.state.status === "completed") {
+            part.state.time.compacted = Date.now()
+            await Session.updatePart(part)
+          }
+        }),
+      )
       log.info("pruned", { count: toPrune.length })
     }
   }
