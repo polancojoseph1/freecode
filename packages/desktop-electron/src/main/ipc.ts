@@ -27,6 +27,25 @@ type Deps = {
   setBackgroundColor: (color: string) => void
 }
 
+const ALLOWED_APPS = new Set([
+  "Visual Studio Code",
+  "Cursor",
+  "Zed",
+  "TextMate",
+  "Antigravity",
+  "Terminal",
+  "iTerm",
+  "Ghostty",
+  "Warp",
+  "Xcode",
+  "Android Studio",
+  "Sublime Text",
+  "code",
+  "cursor",
+  "zed",
+  "powershell",
+])
+
 export function registerIpcHandlers(deps: Deps) {
   ipcMain.handle("kill-sidecar", () => deps.killSidecar())
   ipcMain.handle("install-cli", () => deps.installCli())
@@ -130,9 +149,20 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    if (!ALLOWED_APPS.has(app)) {
+      throw new Error(`App ${app} is not allowed to be launched`)
+    }
+
+    const exists = await deps.checkAppExists(app)
+    if (!exists) throw new Error(`App ${app} not found`)
+
+    const resolvedApp = await deps.resolveAppPath(app)
+    if (!resolvedApp) throw new Error(`Could not resolve path for app ${app}`)
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
