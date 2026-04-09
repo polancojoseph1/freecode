@@ -404,17 +404,37 @@ async function getCustomThemes() {
   ]
 
   const result: Record<string, ThemeJson> = {}
-  for (const dir of directories) {
-    for (const item of await Glob.scan("themes/*.json", {
+
+  // ⚡ Bolt Performance Optimization:
+  // Replaced sequential nested for loops with concurrent mapping via Promise.all.
+  // This resolves an N+1 synchronous read issue when loading custom themes, parallelizing both
+  // directory scanning and JSON file reading. The subsequent nested loop applies the merges sequentially
+  // from the resolved promise arrays, safely preserving the original directory precedence order.
+  const dirPromises = directories.map(async (dir) => {
+    const files = await Glob.scan("themes/*.json", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
-    })) {
-      const name = path.basename(item, ".json")
-      result[name] = await Filesystem.readJson(item)
+    })
+
+    return Promise.all(
+      files.map(async (item) => {
+        const name = path.basename(item, ".json")
+        const content = await Filesystem.readJson<ThemeJson>(item)
+        return { name, content }
+      })
+    )
+  })
+
+  const allDirEntries = await Promise.all(dirPromises)
+
+  for (const entries of allDirEntries) {
+    for (const { name, content } of entries) {
+      result[name] = content
     }
   }
+
   return result
 }
 
