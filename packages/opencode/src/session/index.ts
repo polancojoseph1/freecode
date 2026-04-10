@@ -665,10 +665,11 @@ export namespace Session {
     const project = Instance.project
     try {
       const session = await get(sessionID)
-      for (const child of await children(sessionID)) {
-        await remove(child.id)
-      }
-      await unshare(sessionID).catch(() => {})
+      const childSessions = await children(sessionID)
+      await Promise.all([
+        ...childSessions.map((child) => remove(child.id)),
+        unshare(sessionID).catch(() => {})
+      ])
       // CASCADE delete handles messages and parts automatically
       Database.use((db) => {
         db.delete(SessionTable).where(eq(SessionTable.id, sessionID)).run()
