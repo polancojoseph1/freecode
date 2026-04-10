@@ -130,6 +130,30 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    const ALLOWED_APPS = new Set([
+      "Visual Studio Code",
+      "Cursor",
+      "Zed",
+      "TextMate",
+      "Antigravity",
+      "Terminal",
+      "iTerm",
+      "Ghostty",
+      "Warp",
+      "Xcode",
+      "Android Studio",
+      "Sublime Text",
+      "code",
+      "cursor",
+      "zed",
+      "powershell"
+    ])
+
+    if (!ALLOWED_APPS.has(app)) {
+      throw new Error(`Application ${app} is not allowed to be opened`)
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
         process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
