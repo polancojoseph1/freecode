@@ -73,10 +73,15 @@ export namespace Storage {
           })
 
           log.info(`migrating sessions for project ${projectID}`)
-          for (const sessionFile of await Glob.scan("storage/session/info/*.json", {
+          const sessionFiles = await Glob.scan("storage/session/info/*.json", {
             cwd: fullProjectDir,
             absolute: true,
-          })) {
+          })
+          // ⚡ Bolt Performance Optimization:
+          // Replaced sequential loops with concurrent processing using the `work` utility from util/queue.
+          // This avoids the N+1 synchronous read issue while maintaining a concurrency limit to prevent EMFILE errors.
+          // Impact: Significantly reduces migration time by parallelizing I/O.
+          await work(50, sessionFiles, async (sessionFile) => {
             const dest = path.join(dir, "session", projectID, path.basename(sessionFile))
             log.info("copying", {
               sessionFile,
@@ -85,10 +90,12 @@ export namespace Storage {
             const session = await Filesystem.readJson<any>(sessionFile)
             await Filesystem.writeJson(dest, session)
             log.info(`migrating messages for session ${session.id}`)
-            for (const msgFile of await Glob.scan(`storage/session/message/${session.id}/*.json`, {
+
+            const msgFiles = await Glob.scan(`storage/session/message/${session.id}/*.json`, {
               cwd: fullProjectDir,
               absolute: true,
-            })) {
+            })
+            await work(50, msgFiles, async (msgFile) => {
               const dest = path.join(dir, "message", session.id, path.basename(msgFile))
               log.info("copying", {
                 msgFile,
@@ -102,7 +109,7 @@ export namespace Storage {
                 cwd: fullProjectDir,
                 absolute: true,
               })
-              await Promise.all(partFiles.map(async (partFile) => {
+              await work(50, partFiles, async (partFile) => {
                 const dest = path.join(dir, "part", message.id, path.basename(partFile))
                 const part = await Filesystem.readJson(partFile)
                 log.info("copying", {
@@ -110,9 +117,9 @@ export namespace Storage {
                   dest,
                 })
                 await Filesystem.writeJson(dest, part)
-              }))
-            }
-          }
+              })
+            })
+          })
         }
       }
     },
