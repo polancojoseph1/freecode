@@ -70,7 +70,7 @@ describe("Session.listGlobal", () => {
       directory: tmp.path,
       fn: async () => Session.create({ title: "page-one" }),
     })
-    await new Promise((resolve) => setTimeout(resolve, 5))
+    await new Promise((resolve) => setTimeout(resolve, 50))
     const second = await Instance.provide({
       directory: tmp.path,
       fn: async () => Session.create({ title: "page-two" }),
