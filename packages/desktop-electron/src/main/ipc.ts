@@ -2,6 +2,7 @@ import { execFile } from "node:child_process"
 import { BrowserWindow, Notification, app, clipboard, dialog, ipcMain, shell } from "electron"
 import type { IpcMainEvent, IpcMainInvokeEvent } from "electron"
 
+import { checkAppExists, resolveAppPath } from "./apps"
 import type { InitStep, ServerReadyData, SqliteMigrationProgress, TitlebarTheme, WslConfig } from "../preload/types"
 import { getStore } from "./store"
 import { setTitlebar } from "./windows"
@@ -130,9 +131,26 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    const ALLOWED_APPS = [
+      "code", "cursor", "webstorm", "idea", "fleet", "zed",
+      "pycharm", "rubymine", "phpstorm", "goland", "rider", "clion"
+    ]
+    const appLower = app.toLowerCase()
+    const isAllowed = ALLOWED_APPS.some(allowed => appLower.includes(allowed))
+    if (!isAllowed) {
+      throw new Error(`Application "${app}" is not allowed to open paths.`)
+    }
+
+    const resolvedApp = resolveAppPath(app)
+    const appExists = checkAppExists(app)
+    if (!resolvedApp || !appExists) {
+      throw new Error(`Application "${app}" not found.`)
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
