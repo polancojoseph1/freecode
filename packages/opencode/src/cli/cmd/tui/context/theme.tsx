@@ -404,17 +404,34 @@ async function getCustomThemes() {
   ]
 
   const result: Record<string, ThemeJson> = {}
-  for (const dir of directories) {
-    for (const item of await Glob.scan("themes/*.json", {
-      cwd: dir,
-      absolute: true,
-      dot: true,
-      symlink: true,
-    })) {
-      const name = path.basename(item, ".json")
-      result[name] = await Filesystem.readJson(item)
+
+  // ⚡ Bolt Performance Optimization:
+  // Parallelize I/O for fetching and parsing theme configurations
+  // while preserving the precedence rules by retaining order.
+  const scannedDirs = await Promise.all(
+    directories.map(async (dir) => {
+      const items = await Glob.scan("themes/*.json", {
+        cwd: dir,
+        absolute: true,
+        dot: true,
+        symlink: true,
+      })
+      const parsed = await Promise.all(
+        items.map(async (item) => ({
+          name: path.basename(item, ".json"),
+          content: await Filesystem.readJson<ThemeJson>(item),
+        }))
+      )
+      return parsed
+    })
+  )
+
+  for (const dirResults of scannedDirs) {
+    for (const { name, content } of dirResults) {
+      result[name] = content
     }
   }
+
   return result
 }
 
