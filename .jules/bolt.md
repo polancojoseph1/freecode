@@ -36,3 +36,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Parallelize Independent I/O Tasks While Maintaining Sequential Merging
 **Learning:** In deeply nested configurations like those in `config.ts`, while the merge order of config objects strictly dictates final state, the disk read and parsing I/O can still be parallelized. By returning objects mapping the path/order to the parsed config from a `Promise.all` and merging them subsequently in order, N+1 synchronous read blocking was eliminated without breaking precedence rules.
 **Action:** When working with sequential dependency resolution patterns where order matters, map the I/O into a `Promise.all` and defer the state mutation (like deep merging) into a second sequential loop over the awaited results.
+
+## 2026-04-12 - [Database Array Mutation Race Condition]
+**Learning:** When replacing sequential `await` loops with `Promise.all(array.map(...))` to optimize database writes, mutating a shared array (e.g., `results.push()` inside the map callback) introduces a race condition because the promises resolve in non-deterministic order. This scrambles the original array order.
+**Action:** When order matters, either return values from the `Promise.all` map and process them afterwards, or defer the synchronous array mutations to a separate loop after the `Promise.all` completes.

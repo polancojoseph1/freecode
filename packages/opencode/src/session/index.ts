@@ -266,14 +266,17 @@ export namespace Session {
           ...(parentID && { parentID }),
         })
 
-        for (const part of msg.parts) {
-          await updatePart({
-            ...part,
-            id: PartID.ascending(),
-            messageID: cloned.id,
-            sessionID: session.id,
-          })
-        }
+        // ⚡ Bolt: Execute part updates concurrently to eliminate N+1 DB operations
+        await Promise.all(
+          msg.parts.map((part) =>
+            updatePart({
+              ...part,
+              id: PartID.ascending(),
+              messageID: cloned.id,
+              sessionID: session.id,
+            })
+          )
+        )
       }
       return session
     },

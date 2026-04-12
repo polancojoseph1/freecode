@@ -89,12 +89,15 @@ export namespace SessionCompaction {
     }
     log.info("found", { pruned, total })
     if (pruned > PRUNE_MINIMUM) {
-      for (const part of toPrune) {
-        if (part.state.status === "completed") {
-          part.state.time.compacted = Date.now()
-          await Session.updatePart(part)
-        }
-      }
+      // ⚡ Bolt: Execute part updates concurrently to avoid N+1 synchronous DB operations
+      await Promise.all(
+        toPrune.map(async (part) => {
+          if (part.state.status === "completed") {
+            part.state.time.compacted = Date.now()
+            await Session.updatePart(part)
+          }
+        })
+      )
       log.info("pruned", { count: toPrune.length })
     }
   }
@@ -248,19 +251,22 @@ When constructing the summary, try to stick to this template:
           system: original.system,
           variant: original.variant,
         })
-        for (const part of replay.parts) {
-          if (part.type === "compaction") continue
-          const replayPart =
-            part.type === "file" && MessageV2.isMedia(part.mime)
-              ? { type: "text" as const, text: `[Attached ${part.mime}: ${part.filename ?? "file"}]` }
-              : part
-          await Session.updatePart({
-            ...replayPart,
-            id: PartID.ascending(),
-            messageID: replayMsg.id,
-            sessionID: input.sessionID,
+        // ⚡ Bolt: Update replayed parts concurrently for faster processing
+        await Promise.all(
+          replay.parts.map(async (part) => {
+            if (part.type === "compaction") return
+            const replayPart =
+              part.type === "file" && MessageV2.isMedia(part.mime)
+                ? { type: "text" as const, text: `[Attached ${part.mime}: ${part.filename ?? "file"}]` }
+                : part
+            await Session.updatePart({
+              ...replayPart,
+              id: PartID.ascending(),
+              messageID: replayMsg.id,
+              sessionID: input.sessionID,
+            })
           })
-        }
+        )
       } else {
         const continueMsg = await Session.updateMessage({
           id: MessageID.ascending(),

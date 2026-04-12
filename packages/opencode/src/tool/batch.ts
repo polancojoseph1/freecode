@@ -134,22 +134,30 @@ export const BatchTool = Tool.define("batch", async () => {
 
       // Add discarded calls as errors
       const now = Date.now()
-      for (const call of discardedCalls) {
-        const partID = PartID.ascending()
-        await Session.updatePart({
-          id: partID,
-          messageID: ctx.messageID,
-          sessionID: ctx.sessionID,
-          type: "tool",
-          tool: call.tool,
-          callID: partID,
-          state: {
-            status: "error",
-            input: call.parameters,
-            error: "Maximum of 25 tools allowed in batch",
-            time: { start: now, end: now },
-          },
+
+      // ⚡ Bolt: Execute part updates concurrently to avoid N+1 DB operations
+      await Promise.all(
+        discardedCalls.map(async (call) => {
+          const partID = PartID.ascending()
+          return Session.updatePart({
+            id: partID,
+            messageID: ctx.messageID,
+            sessionID: ctx.sessionID,
+            type: "tool",
+            tool: call.tool,
+            callID: partID,
+            state: {
+              status: "error",
+              input: call.parameters,
+              error: "Maximum of 25 tools allowed in batch",
+              time: { start: now, end: now },
+            },
+          })
         })
+      )
+
+      // ⚡ Bolt: Append results synchronously after parts are saved to preserve array order
+      for (const call of discardedCalls) {
         results.push({
           success: false as const,
           tool: call.tool,

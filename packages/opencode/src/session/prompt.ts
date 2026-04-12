@@ -1262,9 +1262,8 @@ export namespace SessionPrompt {
     )
 
     await Session.updateMessage(info)
-    for (const part of parts) {
-      await Session.updatePart(part)
-    }
+    // ⚡ Bolt: Execute part updates concurrently to speed up message insertion
+    await Promise.all(parts.map((part) => Session.updatePart(part)))
 
     return {
       info,
