@@ -84,7 +84,7 @@ export namespace Process {
         if (timer) clearTimeout(timer)
       }
 
-      proc.on("exit", (code, signal) => {
+      proc.on("close", (code, signal) => {
         done()
         resolve(code ?? (signal ? 1 : 0))
       })
