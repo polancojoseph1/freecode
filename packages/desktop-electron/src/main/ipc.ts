@@ -27,6 +27,23 @@ type Deps = {
   setBackgroundColor: (color: string) => void
 }
 
+const ALLOWED_APPS = new Set([
+  "code",
+  "cursor",
+  "zed",
+  "TextMate",
+  "Visual Studio Code",
+  "Antigravity",
+  "Terminal",
+  "iTerm",
+  "Ghostty",
+  "Warp",
+  "Xcode",
+  "Android Studio",
+  "powershell",
+  "Sublime Text",
+])
+
 export function registerIpcHandlers(deps: Deps) {
   ipcMain.handle("kill-sidecar", () => deps.killSidecar())
   ipcMain.handle("install-cli", () => deps.installCli())
@@ -45,11 +62,17 @@ export function registerIpcHandlers(deps: Deps) {
     deps.setDisplayBackend(backend),
   )
   ipcMain.handle("parse-markdown", (_event: IpcMainInvokeEvent, markdown: string) => deps.parseMarkdown(markdown))
-  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => deps.checkAppExists(appName))
+  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => {
+    if (!ALLOWED_APPS.has(appName)) return false
+    return deps.checkAppExists(appName)
+  })
   ipcMain.handle("wsl-path", (_event: IpcMainInvokeEvent, path: string, mode: "windows" | "linux" | null) =>
     deps.wslPath(path, mode),
   )
-  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => deps.resolveAppPath(appName))
+  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => {
+    if (!ALLOWED_APPS.has(appName)) return null
+    return deps.resolveAppPath(appName)
+  })
   ipcMain.on("loading-window-complete", () => deps.loadingWindowComplete())
   ipcMain.handle("run-updater", (_event: IpcMainInvokeEvent, alertOnFail: boolean) => deps.runUpdater(alertOnFail))
   ipcMain.handle("check-update", () => deps.checkUpdate())
@@ -130,9 +153,17 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+    if (!ALLOWED_APPS.has(app)) return
+
+    // Validate existence and resolve path using deps
+    const exists = await deps.checkAppExists(app)
+    if (!exists) return
+    const resolvedApp = await deps.resolveAppPath(app)
+    if (!resolvedApp) return
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
