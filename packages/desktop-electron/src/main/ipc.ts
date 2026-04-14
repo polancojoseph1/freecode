@@ -6,6 +6,25 @@ import type { InitStep, ServerReadyData, SqliteMigrationProgress, TitlebarTheme,
 import { getStore } from "./store"
 import { setTitlebar } from "./windows"
 
+const ALLOWED_APPS = new Set([
+  "Visual Studio Code",
+  "Cursor",
+  "Zed",
+  "TextMate",
+  "Antigravity",
+  "Terminal",
+  "iTerm",
+  "Ghostty",
+  "Warp",
+  "Xcode",
+  "Android Studio",
+  "Sublime Text",
+  "code",
+  "cursor",
+  "zed",
+  "powershell",
+])
+
 type Deps = {
   killSidecar: () => void
   installCli: () => Promise<string>
@@ -45,11 +64,11 @@ export function registerIpcHandlers(deps: Deps) {
     deps.setDisplayBackend(backend),
   )
   ipcMain.handle("parse-markdown", (_event: IpcMainInvokeEvent, markdown: string) => deps.parseMarkdown(markdown))
-  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => deps.checkAppExists(appName))
+  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => ALLOWED_APPS.has(appName) ? deps.checkAppExists(appName) : false)
   ipcMain.handle("wsl-path", (_event: IpcMainInvokeEvent, path: string, mode: "windows" | "linux" | null) =>
     deps.wslPath(path, mode),
   )
-  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => deps.resolveAppPath(appName))
+  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => ALLOWED_APPS.has(appName) ? deps.resolveAppPath(appName) : null)
   ipcMain.on("loading-window-complete", () => deps.loadingWindowComplete())
   ipcMain.handle("run-updater", (_event: IpcMainInvokeEvent, alertOnFail: boolean) => deps.runUpdater(alertOnFail))
   ipcMain.handle("check-update", () => deps.checkUpdate())
@@ -129,11 +148,12 @@ export function registerIpcHandlers(deps: Deps) {
   })
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
-    if (!app) return shell.openPath(path)
+    if (!app || !ALLOWED_APPS.has(app)) return shell.openPath(path)
+    const targetApp = (await deps.resolveAppPath(app)) ?? app
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
-      execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
+        process.platform === "darwin" ? (["open", ["-a", targetApp, path]] as const) : ([targetApp, [path]] as const)
+      execFile(cmd, args, (err: Error | null) => (err ? reject(err) : resolve()))
     })
   })
 
