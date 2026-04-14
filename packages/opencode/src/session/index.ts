@@ -665,9 +665,11 @@ export namespace Session {
     const project = Instance.project
     try {
       const session = await get(sessionID)
-      for (const child of await children(sessionID)) {
-        await remove(child.id)
-      }
+      // ⚡ Bolt Performance Optimization:
+      // Replaced sequential `for...of` loop with concurrent `Promise.all`.
+      // This mitigates an N+1 await bottleneck when a session has many children.
+      const childSessions = await children(sessionID)
+      await Promise.all(childSessions.map((child) => remove(child.id)))
       await unshare(sessionID).catch(() => {})
       // CASCADE delete handles messages and parts automatically
       Database.use((db) => {
