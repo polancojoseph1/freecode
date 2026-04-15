@@ -3,8 +3,28 @@ import { BrowserWindow, Notification, app, clipboard, dialog, ipcMain, shell } f
 import type { IpcMainEvent, IpcMainInvokeEvent } from "electron"
 
 import type { InitStep, ServerReadyData, SqliteMigrationProgress, TitlebarTheme, WslConfig } from "../preload/types"
+import { checkAppExists, resolveAppPath } from "./apps"
 import { getStore } from "./store"
 import { setTitlebar } from "./windows"
+
+const ALLOWED_APPS = [
+  "Visual Studio Code",
+  "Cursor",
+  "Zed",
+  "TextMate",
+  "Antigravity",
+  "Terminal",
+  "iTerm",
+  "Ghostty",
+  "Warp",
+  "Xcode",
+  "Android Studio",
+  "Sublime Text",
+  "code",
+  "cursor",
+  "zed",
+  "powershell",
+]
 
 type Deps = {
   killSidecar: () => void
@@ -17,9 +37,7 @@ type Deps = {
   getDisplayBackend: () => Promise<string | null>
   setDisplayBackend: (backend: string | null) => Promise<void> | void
   parseMarkdown: (markdown: string) => Promise<string> | string
-  checkAppExists: (appName: string) => Promise<boolean> | boolean
   wslPath: (path: string, mode: "windows" | "linux" | null) => Promise<string>
-  resolveAppPath: (appName: string) => Promise<string | null>
   loadingWindowComplete: () => void
   runUpdater: (alertOnFail: boolean) => Promise<void> | void
   checkUpdate: () => Promise<{ updateAvailable: boolean; version?: string }>
@@ -45,11 +63,17 @@ export function registerIpcHandlers(deps: Deps) {
     deps.setDisplayBackend(backend),
   )
   ipcMain.handle("parse-markdown", (_event: IpcMainInvokeEvent, markdown: string) => deps.parseMarkdown(markdown))
-  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => deps.checkAppExists(appName))
+  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => {
+    if (!ALLOWED_APPS.includes(appName)) return false
+    return checkAppExists(appName)
+  })
   ipcMain.handle("wsl-path", (_event: IpcMainInvokeEvent, path: string, mode: "windows" | "linux" | null) =>
     deps.wslPath(path, mode),
   )
-  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => deps.resolveAppPath(appName))
+  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => {
+    if (!ALLOWED_APPS.includes(appName)) return null
+    return resolveAppPath(appName)
+  })
   ipcMain.on("loading-window-complete", () => deps.loadingWindowComplete())
   ipcMain.handle("run-updater", (_event: IpcMainInvokeEvent, alertOnFail: boolean) => deps.runUpdater(alertOnFail))
   ipcMain.handle("check-update", () => deps.checkUpdate())
@@ -130,9 +154,13 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+    if (!ALLOWED_APPS.includes(app)) throw new Error(`Application not allowed: ${app}`)
+
+    const resolvedApp = resolveAppPath(app) ?? app
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
