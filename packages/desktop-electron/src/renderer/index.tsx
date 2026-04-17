@@ -128,7 +128,6 @@ const createPlatform = (): Platform => {
     },
     async openPath(path: string, app?: string) {
       if (os === "windows") {
-        const resolvedApp = app ? await window.api.resolveAppPath(app).catch(() => null) : null
         const resolvedPath = await (async () => {
           if (window.__OPENCODE__?.wsl) {
             const converted = await window.api.wslPath(path, "windows").catch(() => null)
@@ -136,7 +135,7 @@ const createPlatform = (): Platform => {
           }
           return path
         })()
-        return window.api.openPath(resolvedPath, resolvedApp ?? undefined)
+        return window.api.openPath(resolvedPath, app)
       }
       return window.api.openPath(path, app)
     },
