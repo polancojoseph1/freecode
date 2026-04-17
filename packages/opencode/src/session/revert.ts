@@ -114,10 +114,17 @@ export namespace SessionRevert {
     }
     if (remove.length > 0) {
       const ids = remove.map((msg) => msg.info.id)
-      Database.use((db) => db.delete(MessageTable).where(inArray(MessageTable.id, ids)).run())
-      await Promise.all(
-        remove.map((msg) => Bus.publish(MessageV2.Event.Removed, { sessionID: sessionID, messageID: msg.info.id }))
-      )
+      Database.use((db) => {
+        db.delete(MessageTable).where(inArray(MessageTable.id, ids)).run()
+        // ⚡ Bolt Performance Optimization:
+        // Moved the Promise.all(Bus.publish(...)) into Database.effect to unblock the main execution
+        // of cleanup() and defer asynchronous side-effects until after the database transaction succeeds.
+        Database.effect(async () => {
+          await Promise.all(
+            remove.map((msg) => Bus.publish(MessageV2.Event.Removed, { sessionID: sessionID, messageID: msg.info.id }))
+          )
+        })
+      })
     }
 
     if (session.revert.partID && target) {
@@ -129,16 +136,23 @@ export namespace SessionRevert {
         target.parts = preserveParts
         if (removeParts.length > 0) {
           const partIds = removeParts.map((part) => part.id)
-          Database.use((db) => db.delete(PartTable).where(inArray(PartTable.id, partIds)).run())
-          await Promise.all(
-            removeParts.map((part) =>
-              Bus.publish(MessageV2.Event.PartRemoved, {
-                sessionID: sessionID,
-                messageID: target!.info.id,
-                partID: part.id,
-              })
-            )
-          )
+          Database.use((db) => {
+            db.delete(PartTable).where(inArray(PartTable.id, partIds)).run()
+            // ⚡ Bolt Performance Optimization:
+            // Moved the Promise.all(Bus.publish(...)) into Database.effect to unblock the main execution
+            // of cleanup() and defer asynchronous side-effects until after the database transaction succeeds.
+            Database.effect(async () => {
+              await Promise.all(
+                removeParts.map((part) =>
+                  Bus.publish(MessageV2.Event.PartRemoved, {
+                    sessionID: sessionID,
+                    messageID: target!.info.id,
+                    partID: part.id,
+                  })
+                )
+              )
+            })
+          })
         }
       }
     }
