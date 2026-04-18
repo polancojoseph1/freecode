@@ -233,13 +233,10 @@ export namespace Ripgrep {
       }
     }
 
-    // Guard against invalid cwd to provide a consistent ENOENT error.
+    // Guard against invalid cwd by yielding no files rather than throwing an error,
+    // avoiding unhandled promise rejections if the directory is deleted during async operations.
     if (!(await fs.stat(input.cwd).catch(() => undefined))?.isDirectory()) {
-      throw Object.assign(new Error(`No such file or directory: '${input.cwd}'`), {
-        code: "ENOENT",
-        errno: -2,
-        path: input.cwd,
-      })
+      return
     }
 
     const proc = Process.spawn(args, {
