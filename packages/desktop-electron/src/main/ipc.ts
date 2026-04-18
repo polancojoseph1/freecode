@@ -130,9 +130,40 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    const ALLOWED_APPS = [
+      "vscode",
+      "cursor",
+      "zed",
+      "textmate",
+      "antigravity",
+      "finder",
+      "terminal",
+      "iterm2",
+      "ghostty",
+      "warp",
+      "xcode",
+      "android-studio",
+      "powershell",
+      "sublime-text",
+    ]
+
+    if (!ALLOWED_APPS.includes(app.toLowerCase())) {
+      throw new Error(`Application ${app} is not allowed to be launched.`)
+    }
+
+    if (!(await deps.checkAppExists(app))) {
+      throw new Error(`Application ${app} does not exist.`)
+    }
+
+    const resolvedApp = await deps.resolveAppPath(app)
+    if (!resolvedApp) {
+      throw new Error(`Could not resolve path for application ${app}.`)
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
