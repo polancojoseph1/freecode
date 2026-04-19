@@ -40,21 +40,12 @@ export namespace TuiConfig {
 
     let result: Info = {}
 
+    // ⚡ Bolt Optimization: Instantiate all promise structures concurrently
+    // to allow parallel disk read and parsing I/O, while retaining the strict
+    // sequential `await Promise.all` and merging order below.
     const globalPromises = ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file))
-    for (const info of await Promise.all(globalPromises)) {
-      result = mergeInfo(result, info)
-    }
-
-    if (custom) {
-      result = mergeInfo(result, await loadFile(custom))
-      log.debug("loaded custom tui config", { path: custom })
-    }
-
+    const customPromise = custom ? loadFile(custom) : Promise.resolve(undefined)
     const projectPromises = projectFiles.map((file) => loadFile(file))
-    for (const info of await Promise.all(projectPromises)) {
-      result = mergeInfo(result, info)
-    }
-
     const dirPromises = []
     for (const dir of unique(directories)) {
       if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
@@ -62,15 +53,32 @@ export namespace TuiConfig {
         dirPromises.push(loadFile(file))
       }
     }
+    const managedPromises = existsSync(managed)
+      ? ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
+      : []
+
+    for (const info of await Promise.all(globalPromises)) {
+      result = mergeInfo(result, info)
+    }
+
+    if (custom) {
+      const customInfo = await customPromise
+      if (customInfo) {
+        result = mergeInfo(result, customInfo)
+        log.debug("loaded custom tui config", { path: custom })
+      }
+    }
+
+    for (const info of await Promise.all(projectPromises)) {
+      result = mergeInfo(result, info)
+    }
+
     for (const info of await Promise.all(dirPromises)) {
       result = mergeInfo(result, info)
     }
 
-    if (existsSync(managed)) {
-      const managedPromises = ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
-      for (const info of await Promise.all(managedPromises)) {
-        result = mergeInfo(result, info)
-      }
+    for (const info of await Promise.all(managedPromises)) {
+      result = mergeInfo(result, info)
     }
 
     result.keybinds = Config.Keybinds.parse(result.keybinds ?? {})
