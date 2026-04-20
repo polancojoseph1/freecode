@@ -41,36 +41,57 @@ export namespace TuiConfig {
     let result: Info = {}
 
     const globalPromises = ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file))
-    for (const info of await Promise.all(globalPromises)) {
-      result = mergeInfo(result, info)
-    }
 
-    if (custom) {
-      result = mergeInfo(result, await loadFile(custom))
+    const customPromise = custom ? loadFile(custom).then(info => {
       log.debug("loaded custom tui config", { path: custom })
-    }
+      return info;
+    }) : Promise.resolve({})
 
     const projectPromises = projectFiles.map((file) => loadFile(file))
-    for (const info of await Promise.all(projectPromises)) {
-      result = mergeInfo(result, info)
-    }
 
-    const dirPromises = []
+    const dirPromises: Promise<Info>[] = []
     for (const dir of unique(directories)) {
       if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
       for (const file of ConfigPaths.fileInDirectory(dir, "tui")) {
         dirPromises.push(loadFile(file))
       }
     }
-    for (const info of await Promise.all(dirPromises)) {
+
+    const managedPromises: Promise<Info>[] = []
+    if (existsSync(managed)) {
+      ConfigPaths.fileInDirectory(managed, "tui").forEach((file) => {
+        managedPromises.push(loadFile(file))
+      })
+    }
+
+    // Execute all I/O concurrently
+    const [globalInfos, customInfo, projectInfos, dirInfos, managedInfos] = await Promise.all([
+      Promise.all(globalPromises),
+      customPromise,
+      Promise.all(projectPromises),
+      Promise.all(dirPromises),
+      Promise.all(managedPromises)
+    ])
+
+    // Apply merges sequentially to enforce precedence
+    for (const info of globalInfos) {
       result = mergeInfo(result, info)
     }
 
-    if (existsSync(managed)) {
-      const managedPromises = ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
-      for (const info of await Promise.all(managedPromises)) {
-        result = mergeInfo(result, info)
-      }
+    if (custom) {
+      result = mergeInfo(result, customInfo)
+    }
+
+    for (const info of projectInfos) {
+      result = mergeInfo(result, info)
+    }
+
+    for (const info of dirInfos) {
+      result = mergeInfo(result, info)
+    }
+
+    for (const info of managedInfos) {
+      result = mergeInfo(result, info)
     }
 
     result.keybinds = Config.Keybinds.parse(result.keybinds ?? {})
