@@ -27,6 +27,25 @@ type Deps = {
   setBackgroundColor: (color: string) => void
 }
 
+const ALLOWED_APPS = [
+  "Visual Studio Code",
+  "code",
+  "Cursor",
+  "cursor",
+  "Zed",
+  "zed",
+  "TextMate",
+  "Antigravity",
+  "Terminal",
+  "iTerm",
+  "Ghostty",
+  "Warp",
+  "Xcode",
+  "Android Studio",
+  "Sublime Text",
+  "powershell",
+]
+
 export function registerIpcHandlers(deps: Deps) {
   ipcMain.handle("kill-sidecar", () => deps.killSidecar())
   ipcMain.handle("install-cli", () => deps.installCli())
@@ -45,11 +64,17 @@ export function registerIpcHandlers(deps: Deps) {
     deps.setDisplayBackend(backend),
   )
   ipcMain.handle("parse-markdown", (_event: IpcMainInvokeEvent, markdown: string) => deps.parseMarkdown(markdown))
-  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => deps.checkAppExists(appName))
+  ipcMain.handle("check-app-exists", (_event: IpcMainInvokeEvent, appName: string) => {
+    if (!ALLOWED_APPS.includes(appName)) return false
+    return deps.checkAppExists(appName)
+  })
   ipcMain.handle("wsl-path", (_event: IpcMainInvokeEvent, path: string, mode: "windows" | "linux" | null) =>
     deps.wslPath(path, mode),
   )
-  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => deps.resolveAppPath(appName))
+  ipcMain.handle("resolve-app-path", (_event: IpcMainInvokeEvent, appName: string) => {
+    if (!ALLOWED_APPS.includes(appName)) return null
+    return deps.resolveAppPath(appName)
+  })
   ipcMain.on("loading-window-complete", () => deps.loadingWindowComplete())
   ipcMain.handle("run-updater", (_event: IpcMainInvokeEvent, alertOnFail: boolean) => deps.runUpdater(alertOnFail))
   ipcMain.handle("check-update", () => deps.checkUpdate())
@@ -130,9 +155,14 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+    if (!ALLOWED_APPS.includes(app)) return
+
+    const executable = process.platform === "win32" ? await deps.resolveAppPath(app) : app
+    if (!executable) return
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", executable, path]] as const) : ([executable, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
