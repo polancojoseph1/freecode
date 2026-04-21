@@ -130,9 +130,26 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    if (!/^[a-zA-Z0-9\-\_\. ]+$/.test(app)) {
+      throw new Error(`Application name contains invalid characters.`)
+    }
+
+    const exists = await Promise.resolve(deps.checkAppExists(app))
+    if (!exists) {
+      throw new Error(`Application ${app} does not exist.`)
+    }
+
+    const resolvedApp = process.platform === "win32" ? await Promise.resolve(deps.resolveAppPath(app)) : app
+    if (!resolvedApp) {
+      throw new Error(`Could not resolve path for application ${app}.`)
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin"
+          ? (["open", ["-a", resolvedApp, path]] as const)
+          : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
