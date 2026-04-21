@@ -38,37 +38,46 @@ export namespace TuiConfig {
       ? []
       : await ConfigPaths.projectFiles("tui", Instance.directory, Instance.worktree)
 
+    // ⚡ Bolt Performance Optimization:
+    // Hoist all config reading/parsing promises to the top so they run concurrently,
+    // avoiding N+1 synchronous wait loops.
+    const globalPromises = Promise.all(ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file)))
+    const customPromise = custom ? loadFile(custom) : Promise.resolve({})
+    const projectPromises = Promise.all(projectFiles.map((file) => loadFile(file)))
+    const dirPromisesList = []
+    for (const dir of unique(directories)) {
+      if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
+      for (const file of ConfigPaths.fileInDirectory(dir, "tui")) {
+        dirPromisesList.push(loadFile(file))
+      }
+    }
+    const dirPromises = Promise.all(dirPromisesList)
+    const managedPromises = existsSync(managed)
+      ? Promise.all(ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file)))
+      : Promise.resolve([])
+
+    // Now merge them sequentially to preserve the correct precedence order
     let result: Info = {}
 
-    const globalPromises = ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file))
-    for (const info of await Promise.all(globalPromises)) {
+    for (const info of await globalPromises) {
       result = mergeInfo(result, info)
     }
 
     if (custom) {
-      result = mergeInfo(result, await loadFile(custom))
+      result = mergeInfo(result, await customPromise)
       log.debug("loaded custom tui config", { path: custom })
     }
 
-    const projectPromises = projectFiles.map((file) => loadFile(file))
-    for (const info of await Promise.all(projectPromises)) {
+    for (const info of await projectPromises) {
       result = mergeInfo(result, info)
     }
 
-    const dirPromises = []
-    for (const dir of unique(directories)) {
-      if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
-      for (const file of ConfigPaths.fileInDirectory(dir, "tui")) {
-        dirPromises.push(loadFile(file))
-      }
-    }
-    for (const info of await Promise.all(dirPromises)) {
+    for (const info of await dirPromises) {
       result = mergeInfo(result, info)
     }
 
     if (existsSync(managed)) {
-      const managedPromises = ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
-      for (const info of await Promise.all(managedPromises)) {
+      for (const info of await managedPromises) {
         result = mergeInfo(result, info)
       }
     }
