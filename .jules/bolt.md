@@ -36,3 +36,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Parallelize Independent I/O Tasks While Maintaining Sequential Merging
 **Learning:** In deeply nested configurations like those in `config.ts`, while the merge order of config objects strictly dictates final state, the disk read and parsing I/O can still be parallelized. By returning objects mapping the path/order to the parsed config from a `Promise.all` and merging them subsequently in order, N+1 synchronous read blocking was eliminated without breaking precedence rules.
 **Action:** When working with sequential dependency resolution patterns where order matters, map the I/O into a `Promise.all` and defer the state mutation (like deep merging) into a second sequential loop over the awaited results.
+
+## 2025-03-24 - [Concurrent File Loading in Config Parsing]
+**Learning:** Sequential `await Promise.all()` calls for different configuration layers (like global, custom, project, dir, managed) cause the loading of later layers to block until earlier layers are fully read from the filesystem, even though the read operations are completely independent.
+**Action:** When merging configurations with a strict precedence order, initiate all the promises for reading files across all layers first. Then, in a second phase, `await` the promises and merge the results in the required precedence order.
