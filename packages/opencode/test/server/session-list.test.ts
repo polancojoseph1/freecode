@@ -14,6 +14,13 @@ describe("Session.list", () => {
       fn: async () => {
         const first = await Session.create({})
 
+        // Also ensure subdirectories are matched
+        const subDir = path.join(projectRoot, "sub-dir")
+        const subSession = await Instance.provide({
+          directory: subDir,
+          fn: async () => Session.create({}),
+        })
+
         const otherDir = path.join(projectRoot, "..", "__session_list_other")
         const second = await Instance.provide({
           directory: otherDir,
@@ -24,6 +31,7 @@ describe("Session.list", () => {
         const ids = sessions.map((s) => s.id)
 
         expect(ids).toContain(first.id)
+        expect(ids).toContain(subSession.id)
         expect(ids).not.toContain(second.id)
       },
     })

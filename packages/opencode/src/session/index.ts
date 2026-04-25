@@ -552,7 +552,17 @@ export namespace Session {
       conditions.push(eq(SessionTable.workspace_id, WorkspaceContext.workspaceID))
     }
     if (input?.directory) {
-      conditions.push(eq(SessionTable.directory, input.directory))
+      // Use SQL LIKE with trailing % to match subdirectories, or an exact match
+      // Also match EXACTLY if there is a trailing slash vs no trailing slash
+      const dir = input.directory
+      const dirWithSlash = dir.endsWith("/") || dir.endsWith("\\") ? dir : dir + "/"
+
+      conditions.push(
+        or(
+          eq(SessionTable.directory, dir),
+          like(SessionTable.directory, `${dirWithSlash}%`)
+        ) as SQL<unknown>
+      )
     }
     if (input?.roots) {
       conditions.push(isNull(SessionTable.parent_id))
@@ -592,7 +602,15 @@ export namespace Session {
     const conditions: SQL[] = []
 
     if (input?.directory) {
-      conditions.push(eq(SessionTable.directory, input.directory))
+      const dir = input.directory
+      const dirWithSlash = dir.endsWith("/") || dir.endsWith("\\") ? dir : dir + "/"
+
+      conditions.push(
+        or(
+          eq(SessionTable.directory, dir),
+          like(SessionTable.directory, `${dirWithSlash}%`)
+        ) as SQL<unknown>
+      )
     }
     if (input?.roots) {
       conditions.push(isNull(SessionTable.parent_id))

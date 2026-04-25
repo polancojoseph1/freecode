@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import path from "path"
 import { Instance } from "../../src/project/instance"
 import { Project } from "../../src/project/project"
 import { Session } from "../../src/session"
@@ -85,5 +86,33 @@ describe("Session.listGlobal", () => {
 
     expect(ids).toContain(first.id)
     expect(ids).not.toContain(second.id)
+  })
+
+  test("filters by directory matches subdirectories", async () => {
+    await using tmp = await tmpdir({ git: true })
+
+    const first = await Instance.provide({
+      directory: tmp.path,
+      fn: async () => Session.create({ title: "root-dir" }),
+    })
+
+    const subDir = path.join(tmp.path, "sub-dir")
+    const subSession = await Instance.provide({
+      directory: subDir,
+      fn: async () => Session.create({ title: "sub-dir-session" }),
+    })
+
+    await using tmp2 = await tmpdir({ git: true })
+    const otherSession = await Instance.provide({
+      directory: tmp2.path,
+      fn: async () => Session.create({ title: "other-dir-session" }),
+    })
+
+    const sessions = [...Session.listGlobal({ directory: tmp.path })]
+    const ids = sessions.map((session) => session.id)
+
+    expect(ids).toContain(first.id)
+    expect(ids).toContain(subSession.id)
+    expect(ids).not.toContain(otherSession.id)
   })
 })
