@@ -38,23 +38,10 @@ export namespace TuiConfig {
       ? []
       : await ConfigPaths.projectFiles("tui", Instance.directory, Instance.worktree)
 
-    let result: Info = {}
-
+    // ⚡ Bolt: Hoist promise instantiation to process independent file read I/O operations concurrently.
     const globalPromises = ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file))
-    for (const info of await Promise.all(globalPromises)) {
-      result = mergeInfo(result, info)
-    }
-
-    if (custom) {
-      result = mergeInfo(result, await loadFile(custom))
-      log.debug("loaded custom tui config", { path: custom })
-    }
-
+    const customPromise = custom ? loadFile(custom) : Promise.resolve({})
     const projectPromises = projectFiles.map((file) => loadFile(file))
-    for (const info of await Promise.all(projectPromises)) {
-      result = mergeInfo(result, info)
-    }
-
     const dirPromises = []
     for (const dir of unique(directories)) {
       if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
@@ -62,15 +49,32 @@ export namespace TuiConfig {
         dirPromises.push(loadFile(file))
       }
     }
+    const managedPromises = existsSync(managed)
+      ? ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
+      : []
+
+    let result: Info = {}
+
+    // ⚡ Bolt: Sequentially await and merge the concurrently loaded files to preserve correct config precedence layer order.
+    for (const info of await Promise.all(globalPromises)) {
+      result = mergeInfo(result, info)
+    }
+
+    if (custom) {
+      result = mergeInfo(result, await customPromise)
+      log.debug("loaded custom tui config", { path: custom })
+    }
+
+    for (const info of await Promise.all(projectPromises)) {
+      result = mergeInfo(result, info)
+    }
+
     for (const info of await Promise.all(dirPromises)) {
       result = mergeInfo(result, info)
     }
 
-    if (existsSync(managed)) {
-      const managedPromises = ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
-      for (const info of await Promise.all(managedPromises)) {
-        result = mergeInfo(result, info)
-      }
+    for (const info of await Promise.all(managedPromises)) {
+      result = mergeInfo(result, info)
     }
 
     result.keybinds = Config.Keybinds.parse(result.keybinds ?? {})
