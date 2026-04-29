@@ -36,3 +36,6 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Parallelize Independent I/O Tasks While Maintaining Sequential Merging
 **Learning:** In deeply nested configurations like those in `config.ts`, while the merge order of config objects strictly dictates final state, the disk read and parsing I/O can still be parallelized. By returning objects mapping the path/order to the parsed config from a `Promise.all` and merging them subsequently in order, N+1 synchronous read blocking was eliminated without breaking precedence rules.
 **Action:** When working with sequential dependency resolution patterns where order matters, map the I/O into a `Promise.all` and defer the state mutation (like deep merging) into a second sequential loop over the awaited results.
+## 2026-04-29 - [TUI Config Loading Concurrency]
+**Learning:** Config loading in `TuiConfig.state` evaluated independent promises sequentially inside `for...of` loops, causing multiple sequential network/filesystem I/O waterfalls.
+**Action:** Always hoist all promise constructions (e.g., via `map()`) for independent I/O paths (like configuration sources) to the top of the function to allow concurrent execution, then `await` and merge them sequentially to preserve precedence order.
