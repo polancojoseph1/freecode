@@ -20,3 +20,8 @@
 **Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
 **Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
 **Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
+
+## 2024-05-03 - Unauthenticated Webhook Endpoint allows Discord Spam
+**Vulnerability:** The `/feishu` webhook endpoint in `packages/function/src/api.ts` does not verify the signature of incoming requests from Feishu, which forwards requests to a Discord support channel.
+**Learning:** This architectural security gap enables unauthenticated webhook spam. This occurs because the Feishu webhook signature check is missing, allowing anyone to send a payload to this endpoint and have it posted to Discord.
+**Prevention:** Always implement signature verification on webhook endpoints to ensure requests are authentically originating from the expected third-party provider (in this case, Feishu), using the provider's documented signature verification process.
