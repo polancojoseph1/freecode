@@ -40,37 +40,50 @@ export namespace TuiConfig {
 
     let result: Info = {}
 
+    // ⚡ Bolt Performance Optimization:
+    // Hoisted all configuration file loads to execute concurrently, preventing
+    // sequential I/O blocking. Awaiting an outer Promise.all prevents unhandled promise rejections.
     const globalPromises = ConfigPaths.fileInDirectory(Global.Path.config, "tui").map((file) => loadFile(file))
-    for (const info of await Promise.all(globalPromises)) {
-      result = mergeInfo(result, info)
-    }
-
-    if (custom) {
-      result = mergeInfo(result, await loadFile(custom))
-      log.debug("loaded custom tui config", { path: custom })
-    }
-
+    const customPromise = custom ? loadFile(custom) : Promise.resolve(null)
     const projectPromises = projectFiles.map((file) => loadFile(file))
-    for (const info of await Promise.all(projectPromises)) {
-      result = mergeInfo(result, info)
-    }
-
-    const dirPromises = []
+    const dirPromises: Promise<Info>[] = []
     for (const dir of unique(directories)) {
       if (!dir.endsWith(".freecode") && dir !== Flag.FREECODE_CONFIG_DIR) continue
       for (const file of ConfigPaths.fileInDirectory(dir, "tui")) {
         dirPromises.push(loadFile(file))
       }
     }
-    for (const info of await Promise.all(dirPromises)) {
+    const managedPromises = existsSync(managed)
+      ? ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
+      : []
+
+    const [globalInfos, customInfo, projectInfos, dirInfos, managedInfos] = await Promise.all([
+      Promise.all(globalPromises),
+      customPromise,
+      Promise.all(projectPromises),
+      Promise.all(dirPromises),
+      Promise.all(managedPromises)
+    ])
+
+    for (const info of globalInfos) {
       result = mergeInfo(result, info)
     }
 
-    if (existsSync(managed)) {
-      const managedPromises = ConfigPaths.fileInDirectory(managed, "tui").map((file) => loadFile(file))
-      for (const info of await Promise.all(managedPromises)) {
-        result = mergeInfo(result, info)
-      }
+    if (customInfo) {
+      result = mergeInfo(result, customInfo)
+      log.debug("loaded custom tui config", { path: custom })
+    }
+
+    for (const info of projectInfos) {
+      result = mergeInfo(result, info)
+    }
+
+    for (const info of dirInfos) {
+      result = mergeInfo(result, info)
+    }
+
+    for (const info of managedInfos) {
+      result = mergeInfo(result, info)
     }
 
     result.keybinds = Config.Keybinds.parse(result.keybinds ?? {})
