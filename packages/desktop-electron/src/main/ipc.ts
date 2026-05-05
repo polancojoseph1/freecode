@@ -130,9 +130,25 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    // Reject any path separators in the app name to prevent directory traversal
+    if (/[/\\]/.test(app)) {
+      throw new Error(`Invalid application name: ${app}`)
+    }
+
+    const appExists = await deps.checkAppExists(app)
+    if (!appExists) {
+      throw new Error(`Application not found: ${app}`)
+    }
+
+    const resolvedAppPath = await deps.resolveAppPath(app)
+    if (!resolvedAppPath) {
+      throw new Error(`Could not resolve path for application: ${app}`)
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedAppPath, path]] as const) : ([resolvedAppPath, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
