@@ -130,9 +130,24 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    if (/[/\\]/.test(app)) {
+      throw new Error("Invalid application name: cannot contain path separators")
+    }
+
+    const exists = await deps.checkAppExists(app)
+    if (!exists) {
+      throw new Error(`Application not found: ${app}`)
+    }
+
+    const resolvedApp = await deps.resolveAppPath(app)
+    if (!resolvedApp) {
+      throw new Error(`Failed to resolve application path for: ${app}`)
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
