@@ -3,13 +3,15 @@ import { uuid } from "./uuid"
 
 const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto")
 const secureDescriptor = Object.getOwnPropertyDescriptor(globalThis, "isSecureContext")
-const randomDescriptor = Object.getOwnPropertyDescriptor(Math, "random")
-
-const setCrypto = (value: Partial<Crypto>) => {
-  Object.defineProperty(globalThis, "crypto", {
-    configurable: true,
-    value: value as Crypto,
-  })
+const setCrypto = (value: Partial<Crypto> | undefined) => {
+  if (value === undefined) {
+    delete (globalThis as any).crypto
+  } else {
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      value: value as Crypto,
+    })
+  }
 }
 
 const setSecure = (value: boolean) => {
@@ -19,16 +21,11 @@ const setSecure = (value: boolean) => {
   })
 }
 
-const setRandom = (value: () => number) => {
-  Object.defineProperty(Math, "random", {
-    configurable: true,
-    value,
-  })
-}
-
 afterEach(() => {
   if (cryptoDescriptor) {
     Object.defineProperty(globalThis, "crypto", cryptoDescriptor)
+  } else {
+    delete (globalThis as any).crypto
   }
 
   if (secureDescriptor) {
@@ -38,11 +35,14 @@ afterEach(() => {
   if (!secureDescriptor) {
     delete (globalThis as { isSecureContext?: boolean }).isSecureContext
   }
-
-  if (randomDescriptor) {
-    Object.defineProperty(Math, "random", randomDescriptor)
-  }
 })
+
+const mockGetRandomValues = (arr: Uint8Array) => {
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = 0x55 // Arbitrary predictable value
+  }
+  return arr
+}
 
 describe("uuid", () => {
   test("uses randomUUID in secure contexts", () => {
@@ -52,10 +52,9 @@ describe("uuid", () => {
   })
 
   test("falls back in insecure contexts", () => {
-    setCrypto({ randomUUID: () => "00000000-0000-0000-0000-000000000000" })
+    setCrypto({ randomUUID: () => "00000000-0000-0000-0000-000000000000", getRandomValues: mockGetRandomValues } as any)
     setSecure(false)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(uuid()).toBe("55555555-5555-4555-9555-555555555555")
   })
 
   test("falls back when randomUUID throws", () => {
@@ -63,16 +62,21 @@ describe("uuid", () => {
       randomUUID: () => {
         throw new DOMException("Failed", "OperationError")
       },
-    })
+      getRandomValues: mockGetRandomValues
+    } as any)
     setSecure(true)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(uuid()).toBe("55555555-5555-4555-9555-555555555555")
   })
 
   test("falls back when randomUUID is unavailable", () => {
-    setCrypto({})
+    setCrypto({ getRandomValues: mockGetRandomValues } as any)
     setSecure(true)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(uuid()).toBe("55555555-5555-4555-9555-555555555555")
+  })
+
+  test("throws when crypto is unavailable", () => {
+    setCrypto(undefined)
+    setSecure(true)
+    expect(() => uuid()).toThrow("No cryptographically secure random source available")
   })
 })
