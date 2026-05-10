@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process"
+import { basename } from "node:path"
 import { BrowserWindow, Notification, app, clipboard, dialog, ipcMain, shell } from "electron"
 import type { IpcMainEvent, IpcMainInvokeEvent } from "electron"
 
@@ -130,9 +131,24 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    if (app.includes("..")) throw new Error("Path traversal detected")
+
+    const name = basename(app).toLowerCase().replace(/\.(exe|cmd|bat|app)$/, "")
+    const blocklist = new Set(["sh", "bash", "dash", "zsh", "cmd", "powershell", "pwsh", "wscript", "cscript", "node", "python", "python3", "ruby", "perl", "php", "awk", "sed"])
+    if (blocklist.has(name)) {
+      throw new Error(`Application "${app}" is not allowed.`)
+    }
+
+    const exists = await deps.checkAppExists(app)
+    if (!exists) throw new Error(`Application "${app}" not found.`)
+
+    const resolvedApp = await deps.resolveAppPath(app)
+    if (!resolvedApp) throw new Error(`Could not resolve path for application "${app}".`)
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
