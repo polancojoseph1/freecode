@@ -36,3 +36,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Parallelize Independent I/O Tasks While Maintaining Sequential Merging
 **Learning:** In deeply nested configurations like those in `config.ts`, while the merge order of config objects strictly dictates final state, the disk read and parsing I/O can still be parallelized. By returning objects mapping the path/order to the parsed config from a `Promise.all` and merging them subsequently in order, N+1 synchronous read blocking was eliminated without breaking precedence rules.
 **Action:** When working with sequential dependency resolution patterns where order matters, map the I/O into a `Promise.all` and defer the state mutation (like deep merging) into a second sequential loop over the awaited results.
+
+## 2025-03-24 - Parallelize Concurrent Markdown Config Reading
+**Learning:** Sequential `for...of` loops that use `await Promise.all(...)` on partial data segments can still create significant blocking overhead because the inner promises only resolve in their specific bucket. In `tui.ts`, processing multiple independent locations (global, project, custom, dir, managed) via separate await blocks introduces blocking execution flow.
+**Action:** Consolidate independent promise aggregations into a single top-level `await Promise.all([...])` execution, destructuring the returns, and then iterating over them sequentially if specific evaluation order (e.g., config overriding) needs to be preserved.
