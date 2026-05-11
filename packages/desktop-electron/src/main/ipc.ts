@@ -130,9 +130,21 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    if (app.includes("..")) throw new Error("Invalid application path")
+
+    const appName = app.toLowerCase().replace(/\.exe$/, "").split(/[/\\]/).pop() || ""
+    const blocked = ["sh", "bash", "cmd", "node", "powershell", "pwsh", "wscript", "cscript", "zsh"]
+    if (blocked.includes(appName)) throw new Error("Blocked application execution")
+
+    if (!(await deps.checkAppExists(app))) throw new Error("Application not found")
+
+    const resolvedPath = await deps.resolveAppPath(app)
+    const finalApp = resolvedPath || app
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", finalApp, path]] as const) : ([finalApp, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
