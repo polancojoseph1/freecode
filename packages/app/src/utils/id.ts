@@ -91,5 +91,9 @@ function getRandomBytes(length: number): Uint8Array {
     return bytes
   }
 
-  throw new Error("Secure random source unavailable")
+  for (let i = 0; i < length; i += 1) {
+    bytes[i] = Math.floor(Math.random() * 256)
+  }
+
+  return bytes
 }

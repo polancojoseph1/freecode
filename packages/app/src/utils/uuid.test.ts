@@ -52,15 +52,10 @@ describe("uuid", () => {
   })
 
   test("falls back in insecure contexts", () => {
-    setCrypto({
-      randomUUID: () => "00000000-0000-0000-0000-000000000000",
-      getRandomValues: (array: Uint8Array) => {
-        array.fill(8)
-        return array
-      }
-    })
+    setCrypto({ randomUUID: () => "00000000-0000-0000-0000-000000000000" })
     setSecure(false)
-    expect(uuid()).toBe("08080808-0808-4808-8808-080808080808")
+    setRandom(() => 0.5)
+    expect(uuid()).toBe("8")
   })
 
   test("falls back when randomUUID throws", () => {
@@ -68,29 +63,16 @@ describe("uuid", () => {
       randomUUID: () => {
         throw new DOMException("Failed", "OperationError")
       },
-      getRandomValues: (array: Uint8Array) => {
-        array.fill(8)
-        return array
-      }
     })
     setSecure(true)
-    expect(uuid()).toBe("08080808-0808-4808-8808-080808080808")
+    setRandom(() => 0.5)
+    expect(uuid()).toBe("8")
   })
 
   test("falls back when randomUUID is unavailable", () => {
-    setCrypto({
-      getRandomValues: (array: Uint8Array) => {
-        array.fill(8)
-        return array
-      }
-    })
-    setSecure(true)
-    expect(uuid()).toBe("08080808-0808-4808-8808-080808080808")
-  })
-
-  test("throws when random source is completely unavailable", () => {
     setCrypto({})
     setSecure(true)
-    expect(() => uuid()).toThrow("Secure random source unavailable")
+    setRandom(() => 0.5)
+    expect(uuid()).toBe("8")
   })
 })
