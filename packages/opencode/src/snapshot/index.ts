@@ -297,7 +297,7 @@ export namespace Snapshot {
       status.set(file, kind)
     }
 
-    const lines = await Process.lines(
+    for (const line of await Process.lines(
       [
         "git",
         "-c",
@@ -314,85 +314,50 @@ export namespace Snapshot {
         cwd: Instance.directory,
         nothrow: true,
       },
-    )
-
-    // ⚡ Bolt Performance Optimization:
-    // Run all git show requests for files concurrently using a queue with concurrency limit
-    // to prevent N+1 blocking I/O while avoiding spawning too many child processes.
-    // Preserves deterministic order by pushing to results after resolving all.
-    const Queue = (await import("@/util/queue")).work
-
-    const parsedLines = lines.map((line) => {
-      if (!line) return undefined
+    )) {
+      if (!line) continue
       const [additions, deletions, file] = line.split("\t")
       const isBinaryFile = additions === "-" && deletions === "-"
+      const before = isBinaryFile
+        ? ""
+        : await Process.text(
+            [
+              "git",
+              "-c",
+              "core.autocrlf=false",
+              "-c",
+              "core.longpaths=true",
+              "-c",
+              "core.symlinks=true",
+              ...args(git, ["show", `${from}:${file}`]),
+            ],
+            { nothrow: true },
+          ).then((x) => x.text)
+      const after = isBinaryFile
+        ? ""
+        : await Process.text(
+            [
+              "git",
+              "-c",
+              "core.autocrlf=false",
+              "-c",
+              "core.longpaths=true",
+              "-c",
+              "core.symlinks=true",
+              ...args(git, ["show", `${to}:${file}`]),
+            ],
+            { nothrow: true },
+          ).then((x) => x.text)
       const added = isBinaryFile ? 0 : parseInt(additions)
       const deleted = isBinaryFile ? 0 : parseInt(deletions)
-      return { file, isBinaryFile, added, deleted }
-    }).filter((x): x is NonNullable<typeof x> => x !== undefined)
-
-    type ProcessedType = {
-        file: string
-        before: string
-        after: string
-        additions: number
-        deletions: number
-        status: "added" | "deleted" | "modified"
-    }
-    const processed: (ProcessedType | undefined)[] = Array(parsedLines.length).fill(undefined)
-
-    await Queue(
-      10, // Concurrency limit
-      parsedLines.map((x, i) => ({ ...x, index: i })),
-      async ({ file, isBinaryFile, added, deleted, index }) => {
-        const [before, after] = await Promise.all([
-          isBinaryFile
-            ? Promise.resolve("")
-            : Process.text(
-                [
-                  "git",
-                  "-c",
-                  "core.autocrlf=false",
-                  "-c",
-                  "core.longpaths=true",
-                  "-c",
-                  "core.symlinks=true",
-                  ...args(git, ["show", `${from}:${file}`]),
-                ],
-                { nothrow: true },
-              ).then((x) => x.text),
-          isBinaryFile
-            ? Promise.resolve("")
-            : Process.text(
-                [
-                  "git",
-                  "-c",
-                  "core.autocrlf=false",
-                  "-c",
-                  "core.longpaths=true",
-                  "-c",
-                  "core.symlinks=true",
-                  ...args(git, ["show", `${to}:${file}`]),
-                ],
-                { nothrow: true },
-              ).then((x) => x.text),
-        ])
-
-        processed[index] = {
-          file,
-          before,
-          after,
-          additions: Number.isFinite(added) ? added : 0,
-          deletions: Number.isFinite(deleted) ? deleted : 0,
-          status: status.get(file) ?? "modified",
-        }
-      }
-    )
-
-    for (const p of processed) {
-      if (p !== undefined) {
-        result.push(p)
-      }
+      result.push({
+        file,
+        before,
+        after,
+        additions: Number.isFinite(added) ? added : 0,
+        deletions: Number.isFinite(deleted) ? deleted : 0,
+        status: status.get(file) ?? "modified",
+      })
     }
     return result
   }
