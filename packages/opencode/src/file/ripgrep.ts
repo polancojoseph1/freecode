@@ -253,25 +253,29 @@ export namespace Ripgrep {
       throw new Error("Process output not available")
     }
 
-    let buffer = ""
-    const stream = proc.stdout as AsyncIterable<Buffer | string>
-    for await (const chunk of stream) {
-      input.signal?.throwIfAborted()
+    try {
+      let buffer = ""
+      const stream = proc.stdout as AsyncIterable<Buffer | string>
+      for await (const chunk of stream) {
+        input.signal?.throwIfAborted()
 
-      buffer += typeof chunk === "string" ? chunk : chunk.toString()
-      // Handle both Unix (\n) and Windows (\r\n) line endings
-      const lines = buffer.split(/\r?\n/)
-      buffer = lines.pop() || ""
+        buffer += typeof chunk === "string" ? chunk : chunk.toString()
+        // Handle both Unix (\n) and Windows (\r\n) line endings
+        const lines = buffer.split(/\r?\n/)
+        buffer = lines.pop() || ""
 
-      for (const line of lines) {
-        if (line) yield line
+        for (const line of lines) {
+          if (line) yield line
+        }
       }
+
+      if (buffer) yield buffer
+      await proc.exited
+
+      input.signal?.throwIfAborted()
+    } finally {
+      proc.kill("SIGTERM")
     }
-
-    if (buffer) yield buffer
-    await proc.exited
-
-    input.signal?.throwIfAborted()
   }
 
   export async function tree(input: { cwd: string; limit?: number; signal?: AbortSignal }) {
