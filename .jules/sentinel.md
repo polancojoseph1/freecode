@@ -20,3 +20,8 @@
 **Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
 **Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
 **Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
+
+## 2024-05-12 - Prevent insecure Math.random() usage for generating UUIDs and Identifiers
+**Vulnerability:** The application used `Math.random()` to generate UUIDs and other identifiers when the `crypto` or `crypto.randomUUID`/`crypto.getRandomValues` module was unavailable. `Math.random()` is not cryptographically secure, which could lead to predictable identifiers and potential collision or enumeration vulnerabilities.
+**Learning:** We should never fallback to `Math.random()` when a cryptographically secure value is required for an identifier.
+**Prevention:** If `crypto.randomUUID()` is not available, we should generate a v4 UUID utilizing `crypto.getRandomValues()`. If `crypto.getRandomValues()` is also not available, we should throw an error to fail securely and explicitly rather than silently falling back to insecure generation.
