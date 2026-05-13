@@ -52,10 +52,15 @@ describe("uuid", () => {
   })
 
   test("falls back in insecure contexts", () => {
-    setCrypto({ randomUUID: () => "00000000-0000-0000-0000-000000000000" })
+    setCrypto({
+      randomUUID: () => "00000000-0000-0000-0000-000000000000",
+      getRandomValues: (bytes: Uint8Array) => {
+        for (let i = 0; i < bytes.length; i++) bytes[i] = 0x55
+        return bytes
+      }
+    })
     setSecure(false)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(uuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
   })
 
   test("falls back when randomUUID throws", () => {
@@ -63,16 +68,29 @@ describe("uuid", () => {
       randomUUID: () => {
         throw new DOMException("Failed", "OperationError")
       },
+      getRandomValues: (bytes: Uint8Array) => {
+        for (let i = 0; i < bytes.length; i++) bytes[i] = 0x55
+        return bytes
+      }
     })
     setSecure(true)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(uuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
   })
 
   test("falls back when randomUUID is unavailable", () => {
+    setCrypto({
+      getRandomValues: (bytes: Uint8Array) => {
+        for (let i = 0; i < bytes.length; i++) bytes[i] = 0x55
+        return bytes
+      }
+    })
+    setSecure(true)
+    expect(uuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+  })
+
+  test("throws when no cryptographically secure random source is available", () => {
     setCrypto({})
     setSecure(true)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(() => uuid()).toThrow("No cryptographically secure random source available")
   })
 })
