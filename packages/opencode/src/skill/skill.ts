@@ -157,20 +157,24 @@ export namespace Skill {
     }
 
     // Download and load skills from URLs
-    for (const url of config.skills?.urls ?? []) {
-      const list = await Discovery.pull(url)
-      for (const dir of list) {
-        dirs.add(dir)
-        const matches = await Glob.scan(SKILL_PATTERN, {
-          cwd: dir,
-          absolute: true,
-          include: "file",
-          symlink: true,
-        })
-        // ⚡ Bolt Performance Optimization: Concurrent skill loading
-        await Promise.all(matches.map((match) => addSkill(match)))
-      }
-    }
+    // ⚡ Bolt Performance Optimization: Parallelize network requests for skill downloads
+    // This resolves the N+1 network I/O issue when multiple URLs are configured.
+    await Promise.all(
+      (config.skills?.urls ?? []).map(async (url) => {
+        const list = await Discovery.pull(url)
+        for (const dir of list) {
+          dirs.add(dir)
+          const matches = await Glob.scan(SKILL_PATTERN, {
+            cwd: dir,
+            absolute: true,
+            include: "file",
+            symlink: true,
+          })
+          // ⚡ Bolt Performance Optimization: Concurrent skill loading
+          await Promise.all(matches.map((match) => addSkill(match)))
+        }
+      })
+    )
 
     return {
       skills,
