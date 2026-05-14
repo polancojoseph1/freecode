@@ -20,3 +20,8 @@
 **Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
 **Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
 **Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
+
+## $(date +%Y-%m-%d) - Secure IPC Handlers with Dependency Injection
+**Vulnerability:** Command injection and path traversal via `app` argument in `open-path` IPC handler.
+**Learning:** `deps.checkAppExists` and `deps.resolveAppPath` must be accessed via the injected `deps` object closure passed to `registerIpcHandlers(deps: Deps)` rather than globally imported. Also, the `app` parameter should be validated against a blocklist for dangerous interpreters alongside a `..` traversal check. Automated code reviewers may incorrectly hallucinate the absence of methods on dynamically injected dependencies; rely on local typechecking to verify existence.
+**Prevention:** In Electron `main` processes, ensure execution parameters like `app` are thoroughly checked for traversal attacks, denied against interpreter blocklists, and existence/resolution validation is invoked directly via the scoped `deps` object context.
