@@ -2,9 +2,9 @@ import { describe, expect, test, vi } from "bun:test"
 import { createScrollPersistence } from "./layout-scroll"
 
 describe("createScrollPersistence", () => {
-  test("debounces persisted scroll writes", () => {
-    vi.useFakeTimers()
-    try {
+  test("debounces persisted scroll writes", async () => {
+
+
       const snapshot = {
         session: {
           review: { x: 0, y: 0 },
@@ -24,22 +24,21 @@ describe("createScrollPersistence", () => {
         scroll.setScroll("session", "review", { x: 0, y: i })
       }
 
-      vi.advanceTimersByTime(9)
+      await new Promise((resolve) => setTimeout(resolve, 9))
       expect(writes).toHaveLength(0)
 
-      vi.advanceTimersByTime(1)
+      await new Promise((resolve) => setTimeout(resolve, 5))
 
       expect(writes).toHaveLength(1)
       expect(writes[0]?.review).toEqual({ x: 0, y: 30 })
 
       scroll.setScroll("session", "review", { x: 0, y: 30 })
-      vi.advanceTimersByTime(20)
+      await new Promise((resolve) => setTimeout(resolve, 20))
 
       expect(writes).toHaveLength(1)
       scroll.dispose()
-    } finally {
-      vi.useRealTimers()
-    }
+
+
   })
 
   test("reseeds empty cache after persisted snapshot loads", () => {

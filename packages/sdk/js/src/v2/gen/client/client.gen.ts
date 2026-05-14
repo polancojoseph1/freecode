@@ -107,9 +107,8 @@ export const createClient = (config: Config = {}): Client => {
 
       // Return error response
       return opts.responseStyle === "data"
-        ? finalError
+        ? undefined
         : {
-            data: undefined,
             error: finalError,
             request,
             response: undefined as any,
@@ -224,10 +223,10 @@ export const createClient = (config: Config = {}): Client => {
       throw finalError
     }
 
+    // TODO: we probably want to return error and improve types
     return opts.responseStyle === "data"
-      ? finalError
+      ? undefined
       : {
-          data: undefined,
           error: finalError,
           ...result,
         }

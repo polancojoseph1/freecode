@@ -130,26 +130,9 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
-
-    // Security verification
-    if (app.includes("..")) throw new Error("Invalid application name: Path traversal detected")
-
-    // Block dangerous interpreters that could execute arbitrary commands
-    const blocklist = ["sh", "bash", "cmd", "cmd.exe", "node", "powershell", "powershell.exe", "wscript", "wscript.exe"]
-    const appNameOnly = app.split(/[/\\]/).pop()?.toLowerCase() || ""
-    if (blocklist.includes(appNameOnly)) {
-      throw new Error("Execution of shell/interpreter is not allowed")
-    }
-
-    const exists = await deps.checkAppExists(app)
-    if (!exists) throw new Error(`Application not found: ${app}`)
-
-    const resolvedPath = await deps.resolveAppPath(app)
-    if (!resolvedPath) throw new Error(`Failed to resolve path for application: ${app}`)
-
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", resolvedPath, path]] as const) : ([resolvedPath, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })

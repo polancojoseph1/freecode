@@ -22,7 +22,7 @@ describe("tui.selectSession endpoint", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`
+            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD || "secret"}`).toString("base64")}`
           },
           body: JSON.stringify({ sessionID: session.id }),
         })
@@ -50,7 +50,7 @@ describe("tui.selectSession endpoint", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`
+            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD || "secret"}`).toString("base64")}`
           },
           body: JSON.stringify({ sessionID: nonExistentSessionID }),
         })
@@ -74,7 +74,7 @@ describe("tui.selectSession endpoint", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD}`).toString("base64")}`
+            Authorization: `Basic ${Buffer.from(`freecode:${process.env.FREECODE_SERVER_PASSWORD || "secret"}`).toString("base64")}`
           },
           body: JSON.stringify({ sessionID: invalidSessionID }),
         })
