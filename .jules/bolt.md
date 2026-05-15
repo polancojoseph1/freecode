@@ -36,3 +36,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Parallelize Independent I/O Tasks While Maintaining Sequential Merging
 **Learning:** In deeply nested configurations like those in `config.ts`, while the merge order of config objects strictly dictates final state, the disk read and parsing I/O can still be parallelized. By returning objects mapping the path/order to the parsed config from a `Promise.all` and merging them subsequently in order, N+1 synchronous read blocking was eliminated without breaking precedence rules.
 **Action:** When working with sequential dependency resolution patterns where order matters, map the I/O into a `Promise.all` and defer the state mutation (like deep merging) into a second sequential loop over the awaited results.
+
+## 2023-10-24 - [Concurrent Deletions to avoid N+1 Synchronous bottlenecks]
+**Learning:** In deeply nested structures like tree data where each deletion may involve a database or other asynchronous operation (e.g. cascaded deleting session children), executing those sequentially with an `await` in a `for...of` loop can create significant synchronous blocking, slowing down UI rendering and taking an arbitrary amount of time.
+**Action:** When a set of asynchronous actions (like deletions) can be resolved concurrently, evaluate their sources together and group their promises into an `await Promise.all(...)` wrapper to execute their asynchronous operations concurrently and drastically speed up the transaction.

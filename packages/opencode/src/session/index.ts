@@ -665,9 +665,12 @@ export namespace Session {
     const project = Instance.project
     try {
       const session = await get(sessionID)
-      for (const child of await children(sessionID)) {
-        await remove(child.id)
-      }
+
+      // Optimize: concurrently remove children rather than sequentially awaiting each removal.
+      // Resolves N+1 synchronous deletion bottleneck for deeply nested sessions.
+      const childSessions = await children(sessionID)
+      await Promise.all(childSessions.map((child) => remove(child.id)))
+
       await unshare(sessionID).catch(() => {})
       // CASCADE delete handles messages and parts automatically
       Database.use((db) => {
