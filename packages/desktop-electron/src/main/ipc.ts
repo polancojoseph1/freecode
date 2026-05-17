@@ -130,9 +130,37 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("open-path", async (_event: IpcMainInvokeEvent, path: string, app?: string) => {
     if (!app) return shell.openPath(path)
+
+    // Security: Prevent path traversal
+    if (app.includes("..")) {
+      throw new Error("Invalid application path")
+    }
+
+    // Security: Block dangerous built-in executables
+    // Extract base name in case it's a path
+    const appBaseName = app.split(/[/\\]/).pop()?.toLowerCase() || ""
+    const blockedApps = [
+      "sh", "bash", "cmd", "cmd.exe", "node", "powershell",
+      "powershell.exe", "wscript", "wscript.exe"
+    ]
+    if (blockedApps.includes(appBaseName)) {
+      throw new Error("Execution of restricted application blocked")
+    }
+
+    // Validate app exists and resolve secure path
+    const exists = await deps.checkAppExists(app)
+    if (!exists) {
+      throw new Error("Application not found")
+    }
+
+    const resolvedPath = await deps.resolveAppPath(app)
+    if (!resolvedPath) {
+       throw new Error("Failed to resolve secure application path")
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
-        process.platform === "darwin" ? (["open", ["-a", app, path]] as const) : ([app, [path]] as const)
+        process.platform === "darwin" ? (["open", ["-a", resolvedPath, path]] as const) : ([resolvedPath, [path]] as const)
       execFile(cmd, args, (err) => (err ? reject(err) : resolve()))
     })
   })
