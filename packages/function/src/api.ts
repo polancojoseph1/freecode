@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, createHash, timingSafeEqual } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -215,7 +216,36 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
+    const rawBody = await c.req.text()
+
+    const signature = c.req.header("X-Lark-Signature")
+    const timestamp = c.req.header("X-Lark-Request-Timestamp")
+    const nonce = c.req.header("X-Lark-Request-Nonce")
+
+    if (!signature || !timestamp || !nonce) {
+      return c.json({ error: "Missing signature headers" }, { status: 401 })
+    }
+
+    const secret = Resource.FEISHU_WEBHOOK_SECRET.value
+    const str = timestamp + nonce + secret + rawBody
+    const hash = createHash("sha256")
+    hash.update(str)
+    const expectedSignature = hash.digest("hex")
+
+    const sigBuffer = Buffer.from(signature)
+    const expectedBuffer = Buffer.from(expectedSignature)
+    if (sigBuffer.length !== expectedBuffer.length || !timingSafeEqual(sigBuffer, expectedBuffer)) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    let bodyRaw: any
+    try {
+      bodyRaw = JSON.parse(rawBody)
+    } catch (e) {
+      return c.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const body = bodyRaw as {
       challenge?: string
       event?: {
         message?: {
