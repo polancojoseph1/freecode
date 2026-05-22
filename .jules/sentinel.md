@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2025-05-25 - Feishu Webhook Signature Validation Missing
+**Vulnerability:** The `/feishu` webhook endpoint in `packages/function/src/api.ts` processed incoming payloads without verifying the webhook signature, leaving it vulnerable to unauthenticated, spoofed requests.
+**Learning:** External webhook integrations must always implement payload signature verification. Without it, attackers can send malicious payloads that the system will trust as legitimate.
+**Prevention:** Always implement signature verification (e.g., using `createHash("sha256")`) with fail-closed logic (rejecting requests without required validation headers) and use constant-time string comparison (`timingSafeEqual`) to prevent timing attacks.
