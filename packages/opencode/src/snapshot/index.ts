@@ -297,7 +297,7 @@ export namespace Snapshot {
       status.set(file, kind)
     }
 
-    for (const line of await Process.lines(
+    const lines = await Process.lines(
       [
         "git",
         "-c",
@@ -314,51 +314,75 @@ export namespace Snapshot {
         cwd: Instance.directory,
         nothrow: true,
       },
-    )) {
-      if (!line) continue
-      const [additions, deletions, file] = line.split("\t")
-      const isBinaryFile = additions === "-" && deletions === "-"
-      const before = isBinaryFile
-        ? ""
-        : await Process.text(
-            [
-              "git",
-              "-c",
-              "core.autocrlf=false",
-              "-c",
-              "core.longpaths=true",
-              "-c",
-              "core.symlinks=true",
-              ...args(git, ["show", `${from}:${file}`]),
-            ],
-            { nothrow: true },
-          ).then((x) => x.text)
-      const after = isBinaryFile
-        ? ""
-        : await Process.text(
-            [
-              "git",
-              "-c",
-              "core.autocrlf=false",
-              "-c",
-              "core.longpaths=true",
-              "-c",
-              "core.symlinks=true",
-              ...args(git, ["show", `${to}:${file}`]),
-            ],
-            { nothrow: true },
-          ).then((x) => x.text)
-      const added = isBinaryFile ? 0 : parseInt(additions)
-      const deleted = isBinaryFile ? 0 : parseInt(deletions)
-      result.push({
-        file,
-        before,
-        after,
-        additions: Number.isFinite(added) ? added : 0,
-        deletions: Number.isFinite(deleted) ? deleted : 0,
-        status: status.get(file) ?? "modified",
+    )
+
+    // ⚡ Bolt Performance Optimization:
+    // Replaced sequential await loop for Process.text with Promise.all mapped execution.
+    // Added bounded concurrency via chunking to prevent OS file descriptor limit crashes,
+    // and returned results in parallel to map rather than pushing out of order.
+    const chunks = []
+    const maxConcurrency = 10
+    for (let i = 0; i < lines.length; i += maxConcurrency) {
+      chunks.push(lines.slice(i, i + maxConcurrency))
+    }
+
+    for (const chunk of chunks) {
+      const diffs = await Promise.all(
+        chunk.map(async (line) => {
+          if (!line) return undefined
+          const [additions, deletions, file] = line.split("\t")
+          const isBinaryFile = additions === "-" && deletions === "-"
+
+          const [before, after] = await Promise.all([
+            isBinaryFile
+              ? Promise.resolve("")
+              : Process.text(
+                  [
+                    "git",
+                    "-c",
+                    "core.autocrlf=false",
+                    "-c",
+                    "core.longpaths=true",
+                    "-c",
+                    "core.symlinks=true",
+                    ...args(git, ["show", `${from}:${file}`]),
+                  ],
+                  { nothrow: true },
+                ).then((x) => x.text),
+            isBinaryFile
+              ? Promise.resolve("")
+              : Process.text(
+                  [
+                    "git",
+                    "-c",
+                    "core.autocrlf=false",
+                    "-c",
+                    "core.longpaths=true",
+                    "-c",
+                    "core.symlinks=true",
+                    ...args(git, ["show", `${to}:${file}`]),
+                  ],
+                  { nothrow: true },
+                ).then((x) => x.text),
+          ])
+
+          const added = isBinaryFile ? 0 : parseInt(additions)
+          const deleted = isBinaryFile ? 0 : parseInt(deletions)
+          return {
+            file,
+            before,
+            after,
+            additions: Number.isFinite(added) ? added : 0,
+            deletions: Number.isFinite(deleted) ? deleted : 0,
+            status: status.get(file) ?? "modified",
+          }
+        })
+      )
+      diffs.forEach(diff => {
+        if (diff) result.push(diff)
       })
     }
+
     return result
   }
 
