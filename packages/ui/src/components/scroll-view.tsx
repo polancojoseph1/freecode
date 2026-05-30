@@ -1,5 +1,4 @@
-import { onCleanup, onMount, splitProps, type ComponentProps, Show, mergeProps } from "solid-js"
-import { createStore } from "solid-js/store"
+import { onCleanup, onMount, splitProps, type ComponentProps, Show, mergeProps, createSignal } from "solid-js"
 import { useI18n } from "../context/i18n"
 
 export interface ScrollViewProps extends ComponentProps<"div"> {
@@ -49,29 +48,23 @@ export function ScrollView(props: ScrollViewProps) {
   let viewportRef!: HTMLDivElement
   let thumbRef!: HTMLDivElement
 
-  const [state, setState] = createStore({
-    isHovered: false,
-    isDragging: false,
-    thumbHeight: 0,
-    thumbTop: 0,
-    showThumb: false,
-  })
-  const isHovered = () => state.isHovered
-  const isDragging = () => state.isDragging
-  const thumbHeight = () => state.thumbHeight
-  const thumbTop = () => state.thumbTop
-  const showThumb = () => state.showThumb
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for primitives updated frequently on scroll
+  const [isHovered, setIsHovered] = createSignal(false)
+  const [isDragging, setIsDragging] = createSignal(false)
+  const [thumbHeight, setThumbHeight] = createSignal(0)
+  const [thumbTop, setThumbTop] = createSignal(0)
+  const [showThumb, setShowThumb] = createSignal(false)
 
   const updateThumb = () => {
     if (!viewportRef) return
     const { scrollTop, scrollHeight, clientHeight } = viewportRef
 
     if (scrollHeight <= clientHeight || scrollHeight === 0) {
-      setState("showThumb", false)
+      setShowThumb(false)
       return
     }
 
-    setState("showThumb", true)
+    setShowThumb(true)
     const trackPadding = 8
     const trackHeight = clientHeight - trackPadding * 2
 
@@ -88,8 +81,8 @@ export function ScrollView(props: ScrollViewProps) {
     // Ensure thumb stays within bounds (shouldn't be necessary due to math above, but good for safety)
     const boundedTop = trackPadding + Math.max(0, Math.min(top, maxThumbTop))
 
-    setState("thumbHeight", height)
-    setState("thumbTop", boundedTop)
+    setThumbHeight(height)
+    setThumbTop(boundedTop)
   }
 
   onMount(() => {
@@ -120,7 +113,7 @@ export function ScrollView(props: ScrollViewProps) {
   const onThumbPointerDown = (e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setState("isDragging", true)
+    setIsDragging(true)
     startY = e.clientY
     startScrollTop = viewportRef.scrollTop
 
@@ -139,7 +132,7 @@ export function ScrollView(props: ScrollViewProps) {
     }
 
     const onPointerUp = (e: PointerEvent) => {
-      setState("isDragging", false)
+      setIsDragging(false)
       thumbRef.releasePointerCapture(e.pointerId)
       thumbRef.removeEventListener("pointermove", onPointerMove)
       thumbRef.removeEventListener("pointerup", onPointerUp)
@@ -198,8 +191,8 @@ export function ScrollView(props: ScrollViewProps) {
       ref={rootRef}
       class={`scroll-view ${local.class || ""}`}
       style={local.style}
-      onPointerEnter={() => setState("isHovered", true)}
-      onPointerLeave={() => setState("isHovered", false)}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
       {...rest}
     >
       {/* Viewport */}
