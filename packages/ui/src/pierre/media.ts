@@ -81,11 +81,22 @@ export function dataUrlFromMediaValue(value: MediaValue, kind: MediaKind) {
 }
 
 function decodeBase64Utf8(value: string) {
+  // ⚡ Bolt: Native Buffer API is significantly faster for base64 decoding
+  if (typeof Buffer !== "undefined") {
+    try {
+      return Buffer.from(value, "base64").toString("utf-8")
+    } catch {}
+  }
+
   if (typeof atob !== "function") return
 
   try {
     const raw = atob(value)
-    const bytes = Uint8Array.from(raw, (x) => x.charCodeAt(0))
+    // ⚡ Bolt: Direct array indexing is significantly faster than Uint8Array.from mapping
+    const bytes = new Uint8Array(raw.length)
+    for (let i = 0; i < raw.length; i++) {
+      bytes[i] = raw.charCodeAt(i)
+    }
     if (typeof TextDecoder === "function") return new TextDecoder().decode(bytes)
     return raw
   } catch {}
