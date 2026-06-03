@@ -51,28 +51,25 @@ describe("uuid", () => {
     expect(uuid()).toBe("00000000-0000-0000-0000-000000000000")
   })
 
-  test("falls back in insecure contexts", () => {
+  test("throws in insecure contexts", () => {
     setCrypto({ randomUUID: () => "00000000-0000-0000-0000-000000000000" })
     setSecure(false)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(() => uuid()).toThrow("Secure random number generation is not available.")
   })
 
-  test("falls back when randomUUID throws", () => {
+  test("throws when randomUUID throws", () => {
     setCrypto({
       randomUUID: () => {
         throw new DOMException("Failed", "OperationError")
       },
     })
     setSecure(true)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(() => uuid()).toThrow("Secure random number generation is not available.")
   })
 
-  test("falls back when randomUUID is unavailable", () => {
+  test("throws when randomUUID is unavailable", () => {
     setCrypto({})
     setSecure(true)
-    setRandom(() => 0.5)
-    expect(uuid()).toBe("8")
+    expect(() => uuid()).toThrow("Secure random number generation is not available.")
   })
 })

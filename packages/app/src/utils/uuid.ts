@@ -1,4 +1,4 @@
-const fallback = () => Math.random().toString(16).slice(2)
+const fallback = () => { throw new Error("Secure random number generation is not available.") }
 
 export function uuid() {
   const c = globalThis.crypto
