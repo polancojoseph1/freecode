@@ -1,6 +1,5 @@
 import { useIsRouting, useLocation } from "@solidjs/router"
-import { batch, createEffect, onCleanup, onMount } from "solid-js"
-import { createStore } from "solid-js/store"
+import { batch, createEffect, onCleanup, onMount, createSignal } from "solid-js"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { useLanguage } from "@/context/language"
 
@@ -78,37 +77,25 @@ export function DebugBar() {
   const language = useLanguage()
   const location = useLocation()
   const routing = useIsRouting()
-  const [state, setState] = createStore({
-    cls: undefined as number | undefined,
-    delay: undefined as number | undefined,
-    fps: undefined as number | undefined,
-    gap: undefined as number | undefined,
-    heap: {
-      limit: undefined as number | undefined,
-      used: undefined as number | undefined,
-    },
-    inp: undefined as number | undefined,
-    jank: undefined as number | undefined,
-    long: {
-      block: undefined as number | undefined,
-      count: undefined as number | undefined,
-      max: undefined as number | undefined,
-    },
-    nav: {
-      dur: undefined as number | undefined,
-      pending: false,
-    },
-  })
+  const [cls, setCls] = createSignal<number | undefined>()
+  const [delay, setDelay] = createSignal<number | undefined>()
+  const [fpsVal, setFpsVal] = createSignal<number | undefined>()
+  const [gap, setGap] = createSignal<number | undefined>()
+  const [heapState, setHeapState] = createSignal<{ limit?: number; used?: number }>({ limit: undefined, used: undefined })
+  const [inp, setInp] = createSignal<number | undefined>()
+  const [jank, setJank] = createSignal<number | undefined>()
+  const [longVal, setLongVal] = createSignal<{ block?: number; count?: number; max?: number }>({ block: undefined, count: undefined, max: undefined })
+  const [nav, setNav] = createSignal<{ dur?: number; pending: boolean }>({ dur: undefined, pending: false })
 
   const na = () => language.t("debugBar.na")
-  const heap = () => (state.heap.limit ? (state.heap.used ?? 0) / state.heap.limit : undefined)
+  const heap = () => (heapState().limit ? (heapState().used ?? 0) / heapState().limit! : undefined)
   const heapv = () => {
     const value = heap()
     if (value === undefined) return na()
     return `${Math.round(value * 100)}%`
   }
-  const longv = () => (state.long.count === undefined ? na() : `${time(state.long.block) ?? na()}/${state.long.count}`)
-  const navv = () => (state.nav.pending ? "..." : (time(state.nav.dur) ?? na()))
+  const longv = () => (longVal().count === undefined ? na() : `${time(longVal().block) ?? na()}/${longVal().count}`)
+  const navv = () => (nav().pending ? "..." : (time(nav().dur) ?? na()))
 
   let prev = ""
   let start = 0
@@ -133,7 +120,7 @@ export function DebugBar() {
       two = 0
       if (start !== 0) return
       start = performance.now()
-      if (session(prev)) setState("nav", { dur: undefined, pending: true })
+      if (session(prev)) setNav({ dur: undefined, pending: true })
       return
     }
 
@@ -155,7 +142,7 @@ export function DebugBar() {
       one = 0
       two = requestAnimationFrame(() => {
         two = 0
-        setState("nav", { dur: performance.now() - at, pending: false })
+        setNav({ dur: performance.now() - at, pending: false })
       })
     })
   })
@@ -181,9 +168,9 @@ export function DebugBar() {
       const gap = fps.reduce((max, entry) => Math.max(max, entry.dur), 0)
       const jank = fps.filter((entry) => entry.dur > 32).length
       batch(() => {
-        setState("fps", total > 0 ? (fps.length * 1000) / total : undefined)
-        setState("gap", gap > 0 ? gap : undefined)
-        setState("jank", jank)
+        setFpsVal(total > 0 ? (fps.length * 1000) / total : undefined)
+        setGap(gap > 0 ? gap : undefined)
+        setJank(jank)
       })
     }
 
@@ -192,7 +179,7 @@ export function DebugBar() {
       trim(long, span, at)
       const block = long.reduce((sum, entry) => sum + Math.max(0, entry.dur - 50), 0)
       const max = long.reduce((hi, entry) => Math.max(hi, entry.dur), 0)
-      setState("long", { block, count: long.length, max })
+      setLongVal({ block, count: long.length, max })
     }
 
     const syncInp = (at = performance.now()) => {
@@ -206,15 +193,15 @@ export function DebugBar() {
         inp = Math.max(inp, entry.dur)
       }
       batch(() => {
-        setState("delay", delay > 0 ? delay : undefined)
-        setState("inp", inp > 0 ? inp : undefined)
+        setDelay(delay > 0 ? delay : undefined)
+        setInp(inp > 0 ? inp : undefined)
       })
     }
 
     const syncHeap = () => {
       const mem = (performance as Mem).memory
       if (!mem) return
-      setState("heap", { limit: mem.jsHeapSizeLimit, used: mem.usedJSHeapSize })
+      setHeapState({ limit: mem.jsHeapSizeLimit, used: mem.usedJSHeapSize })
     }
 
     const reset = () => {
@@ -224,12 +211,12 @@ export function DebugBar() {
       last = 0
       snap = 0
       batch(() => {
-        setState("fps", undefined)
-        setState("gap", undefined)
-        setState("jank", undefined)
-        setState("delay", undefined)
-        setState("inp", undefined)
-        if (hasLong) setState("long", { block: 0, count: 0, max: 0 })
+        setFpsVal(undefined)
+        setGap(undefined)
+        setJank(undefined)
+        setDelay(undefined)
+        setInp(undefined)
+        if (hasLong) setLongVal({ block: 0, count: 0, max: 0 })
       })
     }
 
@@ -255,10 +242,10 @@ export function DebugBar() {
           return sum + item.value
         }, 0)
         if (add === 0) return
-        setState("cls", (value) => (value ?? 0) + add)
+        setCls((value) => (value ?? 0) + add)
       })
     ) {
-      setState("cls", 0)
+      setCls(0)
     }
 
     if (
@@ -269,7 +256,7 @@ export function DebugBar() {
       })
     ) {
       hasLong = true
-      setState("long", { block: 0, count: 0, max: 0 })
+      setLongVal({ block: 0, count: 0, max: 0 })
     }
 
     watch("event", { buffered: true, durationThreshold: 16, type: "event" }, (entries) => {
@@ -374,71 +361,71 @@ export function DebugBar() {
           label={language.t("debugBar.nav.label")}
           tip={language.t("debugBar.nav.tip")}
           value={navv()}
-          bad={bad(state.nav.dur, 400)}
-          dim={state.nav.dur === undefined && !state.nav.pending}
+          bad={bad(nav().dur, 400)}
+          dim={nav().dur === undefined && !nav().pending}
         />
         <Cell
           label={language.t("debugBar.fps.label")}
           tip={language.t("debugBar.fps.tip")}
-          value={state.fps === undefined ? na() : `${Math.round(state.fps)}`}
-          bad={bad(state.fps, 50, true)}
-          dim={state.fps === undefined}
+          value={fpsVal() === undefined ? na() : `${Math.round(fpsVal()!)}`}
+          bad={bad(fpsVal(), 50, true)}
+          dim={fpsVal() === undefined}
         />
         <Cell
           label={language.t("debugBar.frame.label")}
           tip={language.t("debugBar.frame.tip")}
-          value={time(state.gap) ?? na()}
-          bad={bad(state.gap, 50)}
-          dim={state.gap === undefined}
+          value={time(gap()) ?? na()}
+          bad={bad(gap(), 50)}
+          dim={gap() === undefined}
         />
         <Cell
           label={language.t("debugBar.jank.label")}
           tip={language.t("debugBar.jank.tip")}
-          value={state.jank === undefined ? na() : `${state.jank}`}
-          bad={bad(state.jank, 8)}
-          dim={state.jank === undefined}
+          value={jank() === undefined ? na() : `${jank()}`}
+          bad={bad(jank(), 8)}
+          dim={jank() === undefined}
         />
         <Cell
           label={language.t("debugBar.long.label")}
-          tip={language.t("debugBar.long.tip", { max: ms(state.long.max) ?? na() })}
+          tip={language.t("debugBar.long.tip", { max: ms(longVal().max) ?? na() })}
           value={longv()}
-          bad={bad(state.long.block, 200)}
-          dim={state.long.count === undefined}
+          bad={bad(longVal().block, 200)}
+          dim={longVal().count === undefined}
         />
         <Cell
           label={language.t("debugBar.delay.label")}
           tip={language.t("debugBar.delay.tip")}
-          value={time(state.delay) ?? na()}
-          bad={bad(state.delay, 100)}
-          dim={state.delay === undefined}
+          value={time(delay()) ?? na()}
+          bad={bad(delay(), 100)}
+          dim={delay() === undefined}
         />
         <Cell
           label={language.t("debugBar.inp.label")}
           tip={language.t("debugBar.inp.tip")}
-          value={time(state.inp) ?? na()}
-          bad={bad(state.inp, 200)}
-          dim={state.inp === undefined}
+          value={time(inp()) ?? na()}
+          bad={bad(inp(), 200)}
+          dim={inp() === undefined}
         />
         <Cell
           label={language.t("debugBar.cls.label")}
           tip={language.t("debugBar.cls.tip")}
-          value={state.cls === undefined ? na() : state.cls.toFixed(2)}
-          bad={bad(state.cls, 0.1)}
-          dim={state.cls === undefined}
+          value={cls() === undefined ? na() : cls()!.toFixed(2)}
+          bad={bad(cls(), 0.1)}
+          dim={cls() === undefined}
         />
         <Cell
           label={language.t("debugBar.mem.label")}
           tip={
-            state.heap.used === undefined
+            heapState().used === undefined
               ? language.t("debugBar.mem.tipUnavailable")
               : language.t("debugBar.mem.tip", {
-                  used: mb(state.heap.used) ?? na(),
-                  limit: mb(state.heap.limit) ?? na(),
+                  used: mb(heapState().used) ?? na(),
+                  limit: mb(heapState().limit) ?? na(),
                 })
           }
           value={heapv()}
           bad={bad(heap(), 0.8)}
-          dim={state.heap.used === undefined}
+          dim={heapState().used === undefined}
           wide
         />
       </div>
