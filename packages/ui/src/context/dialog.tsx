@@ -86,7 +86,7 @@ function init() {
     }
     lock.value = false
 
-    const id = Math.random().toString(36).slice(2)
+    const id = crypto.randomUUID().replace(/-/g, "")
     let dispose: (() => void) | undefined
     let setClosing: ((closing: boolean) => void) | undefined
 

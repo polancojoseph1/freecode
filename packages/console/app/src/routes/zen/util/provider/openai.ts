@@ -339,7 +339,7 @@ export function fromOpenaiResponse(resp: any): CommonResponse {
 
   const idIn = (r as any).id
   const id =
-    typeof idIn === "string" ? idIn.replace(/^resp_/, "chatcmpl_") : `chatcmpl_${Math.random().toString(36).slice(2)}`
+    typeof idIn === "string" ? idIn.replace(/^resp_/, "chatcmpl_") : `chatcmpl_${crypto.randomUUID().replace(/-/g, "")}`
   const model = (r as any).model ?? (resp as any).model
 
   const out = Array.isArray((r as any).output) ? (r as any).output : []
@@ -359,7 +359,7 @@ export function fromOpenaiResponse(resp: any): CommonResponse {
       const tid =
         typeof (o as any).id === "string" && (o as any).id.length > 0
           ? (o as any).id
-          : `toolu_${Math.random().toString(36).slice(2)}`
+          : `toolu_${crypto.randomUUID().replace(/-/g, "")}`
       return { id: tid, type: "function" as const, function: { name, arguments: args } }
     })
 
@@ -421,7 +421,7 @@ export function toOpenaiResponse(resp: CommonResponse) {
 
   if (typeof msg.content === "string" && msg.content.length > 0) {
     outputItems.push({
-      id: `msg_${Math.random().toString(36).slice(2)}`,
+      id: `msg_${crypto.randomUUID().replace(/-/g, "")}`,
       type: "message",
       status: "completed",
       role: "assistant",
@@ -466,7 +466,7 @@ export function toOpenaiResponse(resp: CommonResponse) {
   })()
 
   return {
-    id: (resp as any).id?.replace(/^chatcmpl_/, "resp_") ?? `resp_${Math.random().toString(36).slice(2)}`,
+    id: (resp as any).id?.replace(/^chatcmpl_/, "resp_") ?? `resp_${crypto.randomUUID().replace(/-/g, "")}`,
     object: "response",
     model: (resp as any).model,
     output: outputItems,
