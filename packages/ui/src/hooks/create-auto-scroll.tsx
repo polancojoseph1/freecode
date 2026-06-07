@@ -1,5 +1,4 @@
-import { createEffect, on, onCleanup } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createEffect, on, onCleanup, createSignal } from "solid-js"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 
 export interface AutoScrollOptions {
@@ -19,10 +18,10 @@ export function createAutoScroll(options: AutoScrollOptions) {
 
   const threshold = () => options.bottomThreshold ?? 10
 
-  const [store, setStore] = createStore({
-    contentRef: undefined as HTMLElement | undefined,
-    userScrolled: false,
-  })
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  // avoids unnecessary proxy overhead.
+  const [contentRef, setContentRef] = createSignal<HTMLElement | undefined>(undefined)
+  const [userScrolled, setUserScrolled] = createSignal(false)
 
   const active = () => options.working() || settling
 
@@ -79,12 +78,12 @@ export function createAutoScroll(options: AutoScrollOptions) {
   const scrollToBottom = (force: boolean) => {
     if (!force && !active()) return
 
-    if (force && store.userScrolled) setStore("userScrolled", false)
+    if (force && userScrolled()) setUserScrolled(false)
 
     const el = scroll
     if (!el) return
 
-    if (!force && store.userScrolled) return
+    if (!force && userScrolled()) return
 
     const distance = distanceFromBottom(el)
     if (distance < 2) {
@@ -101,12 +100,12 @@ export function createAutoScroll(options: AutoScrollOptions) {
     const el = scroll
     if (!el) return
     if (!canScroll(el)) {
-      if (store.userScrolled) setStore("userScrolled", false)
+      if (userScrolled()) setUserScrolled(false)
       return
     }
-    if (store.userScrolled) return
+    if (userScrolled()) return
 
-    setStore("userScrolled", true)
+    setUserScrolled(true)
     options.onUserInteracted?.()
   }
 
@@ -127,17 +126,17 @@ export function createAutoScroll(options: AutoScrollOptions) {
     if (!el) return
 
     if (!canScroll(el)) {
-      if (store.userScrolled) setStore("userScrolled", false)
+      if (userScrolled()) setUserScrolled(false)
       return
     }
 
     if (distanceFromBottom(el) < threshold()) {
-      if (store.userScrolled) setStore("userScrolled", false)
+      if (userScrolled()) setUserScrolled(false)
       return
     }
 
     // Ignore scroll events triggered by our own scrollToBottom calls.
-    if (!store.userScrolled && isAuto(el)) {
+    if (!userScrolled() && isAuto(el)) {
       scrollToBottom(false)
       return
     }
@@ -166,19 +165,19 @@ export function createAutoScroll(options: AutoScrollOptions) {
       return
     }
 
-    el.style.overflowAnchor = store.userScrolled ? "auto" : "none"
+    el.style.overflowAnchor = userScrolled() ? "auto" : "none"
   }
 
   createResizeObserver(
-    () => store.contentRef,
+    () => contentRef(),
     () => {
       const el = scroll
       if (el && !canScroll(el)) {
-        if (store.userScrolled) setStore("userScrolled", false)
+        if (userScrolled()) setUserScrolled(false)
         return
       }
       if (!active()) return
-      if (store.userScrolled) return
+      if (userScrolled()) return
       // ResizeObserver fires after layout, before paint.
       // Keep the bottom locked in the same frame to avoid visible
       // "jump up then catch up" artifacts while streaming content.
@@ -193,7 +192,7 @@ export function createAutoScroll(options: AutoScrollOptions) {
       settleTimer = undefined
 
       if (working) {
-        if (!store.userScrolled) scrollToBottom(true)
+        if (!userScrolled()) scrollToBottom(true)
         return
       }
 
@@ -207,7 +206,7 @@ export function createAutoScroll(options: AutoScrollOptions) {
   createEffect(() => {
     // Track `userScrolled` even before `scrollRef` is attached, so we can
     // update overflow anchoring once the element exists.
-    store.userScrolled
+    userScrolled()
     const el = scroll
     if (!el) return
     updateOverflowAnchor(el)
@@ -237,16 +236,16 @@ export function createAutoScroll(options: AutoScrollOptions) {
         el.removeEventListener("wheel", handleWheel)
       }
     },
-    contentRef: (el: HTMLElement | undefined) => setStore("contentRef", el),
+    contentRef: (el: HTMLElement | undefined) => setContentRef(el),
     handleScroll,
     handleInteraction,
     pause: stop,
     resume: () => {
-      if (store.userScrolled) setStore("userScrolled", false)
+      if (userScrolled()) setUserScrolled(false)
       scrollToBottom(true)
     },
     scrollToBottom: () => scrollToBottom(false),
     forceScrollToBottom: () => scrollToBottom(true),
-    userScrolled: () => store.userScrolled,
+    userScrolled: () => userScrolled(),
   }
 }
