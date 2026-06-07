@@ -321,7 +321,7 @@ export function toOaCompatibleResponse(resp: CommonResponse) {
 
   const idIn = (resp as any).id
   const id =
-    typeof idIn === "string" ? idIn.replace(/^msg_/, "chatcmpl_") : `chatcmpl_${Math.random().toString(36).slice(2)}`
+    typeof idIn === "string" ? idIn.replace(/^msg_/, "chatcmpl_") : `chatcmpl_${crypto.randomUUID().replace(/-/g, "")}`
   const model = (resp as any).model
 
   const blocks: any[] = Array.isArray((resp as any).content) ? (resp as any).content : []
@@ -345,7 +345,7 @@ export function toOaCompatibleResponse(resp: CommonResponse) {
       const tid =
         typeof (b as any).id === "string" && (b as any).id.length > 0
           ? (b as any).id
-          : `toolu_${Math.random().toString(36).slice(2)}`
+          : `toolu_${crypto.randomUUID().replace(/-/g, "")}`
       return { id: tid, type: "function" as const, function: { name, arguments: args } }
     })
 

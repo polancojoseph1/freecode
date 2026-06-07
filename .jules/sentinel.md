@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-03-10 - Secure Random ID Generation
+**Vulnerability:** Weak random number generation using `Math.random().toString(36).slice(2)` for generating unique identifiers in UI and backend provider mapping files.
+**Learning:** `Math.random()` is not a Cryptographically Secure Pseudo-Random Number Generator (CSPRNG) and is predictable. It should not be used for security-sensitive IDs, UUIDs, or fallbacks.
+**Prevention:** Use the Web Crypto API (`crypto.randomUUID()` or `crypto.getRandomValues()`) for secure randomness. Provide a fallback if `crypto.randomUUID` might not be available in all contexts (e.g., insecure HTTP connections for front-end code).
