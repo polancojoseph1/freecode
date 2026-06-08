@@ -24,3 +24,8 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+
+## $(date +%Y-%m-%d) - DOMPurify Missing in SSR Rendering (SolidJS)
+**Vulnerability:** XSS vulnerability found in `packages/web/src/components/share/content-markdown.tsx`. Unsanitized markdown HTML from `marked` was injected into the DOM using `innerHTML` on the client and server.
+**Learning:** SolidJS `createResource` runs on both client and server (SSR). When using `DOMPurify` to sanitize markdown, standard `DOMPurify.sanitize()` fails on the server since it requires a DOM.
+**Prevention:** In SolidJS isomorphic components, when dealing with DOM injection via `innerHTML`, check for server contexts (using `isServer`) and dynamically instantiate a headless `JSDOM` window to pass to `DOMPurify` to safely sanitize SSR output before it reaches the browser, alongside standard client-side `DOMPurify.sanitize()`.

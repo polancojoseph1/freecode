@@ -1,0 +1,7 @@
+🛡️ Sentinel: [HIGH] Fix XSS in ContentMarkdown
+
+🚨 Severity: HIGH
+💡 Vulnerability: `ContentMarkdown` component rendered parsed Markdown directly into DOM via `innerHTML` without sanitization, leading to XSS vulnerabilities.
+🎯 Impact: Attackers could inject arbitrary scripts into `ContentMarkdown` to compromise users viewing shared content.
+🔧 Fix: Integrated `DOMPurify` to sanitize HTML output returned by `marked`. A headless JSDOM window is instantiated for SSR sanitization where `window` is unavailable.
+✅ Verification: Type checks passed, dependencies are securely updated.
