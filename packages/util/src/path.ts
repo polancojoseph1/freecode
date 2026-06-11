@@ -1,21 +1,51 @@
+// ⚡ Bolt: Use charCodeAt and loop over split for better performance
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+
+  let end = path.length - 1
+  while (end >= 0 && (path.charCodeAt(end) === 47 || path.charCodeAt(end) === 92)) {
+    end--
+  }
+  if (end < 0) return ""
+
+  let start = end
+  while (start >= 0 && path.charCodeAt(start) !== 47 && path.charCodeAt(start) !== 92) {
+    start--
+  }
+
+  return path.slice(start + 1, end + 1)
 }
 
+// ⚡ Bolt: Use charCodeAt and loop over split to extract directory faster
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+
+  let end = path.length - 1
+  while (end >= 0 && (path.charCodeAt(end) === 47 || path.charCodeAt(end) === 92)) {
+    end--
+  }
+  if (end < 0) return ""
+
+  let start = end
+  while (start >= 0 && path.charCodeAt(start) !== 47 && path.charCodeAt(start) !== 92) {
+    start--
+  }
+
+  if (start < 0) return ""
+
+  return path.slice(0, start) + "/"
 }
 
+// ⚡ Bolt: Use lastIndexOf and slice instead of split
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  const lastDot = path.lastIndexOf(".")
+  if (lastDot === -1 || lastDot === 0 || lastDot === path.length - 1) return ""
+
+  const lastSlash = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"))
+  if (lastSlash > lastDot) return ""
+
+  return path.slice(lastDot + 1)
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
