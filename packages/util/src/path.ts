@@ -1,15 +1,45 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  let end = path.length - 1
+  let code = path.charCodeAt(end)
+  // Trim trailing slashes
+  while (end >= 0 && (code === 47 || code === 92)) {
+    end--
+    if (end >= 0) code = path.charCodeAt(end)
+  }
+  if (end < 0) return ""
+  let start = end
+  code = path.charCodeAt(start)
+  // Find last slash
+  while (start >= 0 && code !== 47 && code !== 92) {
+    start--
+    if (start >= 0) code = path.charCodeAt(start)
+  }
+  return path.slice(start + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  let end = path.length - 1
+  let code = path.charCodeAt(end)
+  // Trim trailing slashes
+  while (end >= 0 && (code === 47 || code === 92)) {
+    end--
+    if (end >= 0) code = path.charCodeAt(end)
+  }
+  if (end < 0) return "/"
+  let start = end
+  code = path.charCodeAt(start)
+  // Find last slash
+  while (start >= 0 && code !== 47 && code !== 92) {
+    start--
+    if (start >= 0) code = path.charCodeAt(start)
+  }
+  if (start < 0) return "/"
+
+  let dir = path.slice(0, start)
+  if (dir.indexOf('\\') !== -1) dir = dir.replace(/\\/g, "/")
+  return dir + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
