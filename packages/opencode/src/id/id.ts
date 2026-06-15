@@ -76,9 +76,15 @@ export namespace Identifier {
 
   /** Extract timestamp from an ascending ID. Does not work with descending IDs. */
   export function timestamp(id: string): number {
-    const prefix = id.split("_")[0]
-    const hex = id.slice(prefix.length + 1, prefix.length + 13)
-    const encoded = BigInt("0x" + hex)
-    return Number(encoded / BigInt(0x1000))
+    // Bolt: Native substring extraction and parseInt are significantly faster than
+    // split() and parsing 12-char hex values with BigInt() for ID timestamp decoding.
+    const underscoreIndex = id.indexOf("_")
+    const hex = id.slice(underscoreIndex + 1, underscoreIndex + 13)
+    // parseInt loses precision for large numbers, so we must use Math.floor division
+    // carefully, but actually the safe max int is 9007199254740991 (0x1FFFFFFFFFFFFF)
+    // and 12 hex chars is at most 0xFFFFFFFFFFFF (281474976710655), so parseInt is safe.
+    // However, JS division is float so encoded / 0x1000 has fractional parts we must drop.
+    const encoded = parseInt(hex, 16)
+    return Math.floor(encoded / 4096)
   }
 }
