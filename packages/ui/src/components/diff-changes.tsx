@@ -7,16 +7,22 @@ export function DiffChanges(props: {
 }) {
   const variant = () => props.variant ?? "default"
 
-  const additions = createMemo(() =>
-    Array.isArray(props.changes)
-      ? props.changes.reduce((acc, diff) => acc + (diff.additions ?? 0), 0)
-      : props.changes.additions,
-  )
-  const deletions = createMemo(() =>
-    Array.isArray(props.changes)
-      ? props.changes.reduce((acc, diff) => acc + (diff.deletions ?? 0), 0)
-      : props.changes.deletions,
-  )
+  const additions = createMemo(() => {
+    if (!Array.isArray(props.changes)) return props.changes.additions
+    let sum = 0
+    for (let i = 0; i < props.changes.length; i++) {
+      sum += props.changes[i]?.additions ?? 0
+    }
+    return sum
+  })
+  const deletions = createMemo(() => {
+    if (!Array.isArray(props.changes)) return props.changes.deletions
+    let sum = 0
+    for (let i = 0; i < props.changes.length; i++) {
+      sum += props.changes[i]?.deletions ?? 0
+    }
+    return sum
+  })
   const total = createMemo(() => (additions() ?? 0) + (deletions() ?? 0))
 
   const blockCounts = createMemo(() => {

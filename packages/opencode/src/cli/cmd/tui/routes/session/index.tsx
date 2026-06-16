@@ -990,16 +990,20 @@ export function Session() {
       return patches.map((patch) => {
         const filename = patch.newFileName || patch.oldFileName || "unknown"
         const cleanFilename = filename.replace(/^[ab]\//, "")
+        let additions = 0
+        let deletions = 0
+        for (let h = 0; h < patch.hunks.length; h++) {
+          const lines = patch.hunks[h].lines
+          for (let l = 0; l < lines.length; l++) {
+            const charCode = lines[l].charCodeAt(0)
+            if (charCode === 43) additions++ // '+'
+            else if (charCode === 45) deletions++ // '-'
+          }
+        }
         return {
           filename: cleanFilename,
-          additions: patch.hunks.reduce(
-            (sum, hunk) => sum + hunk.lines.filter((line) => line.startsWith("+")).length,
-            0,
-          ),
-          deletions: patch.hunks.reduce(
-            (sum, hunk) => sum + hunk.lines.filter((line) => line.startsWith("-")).length,
-            0,
-          ),
+          additions,
+          deletions,
         }
       })
     } catch (error) {
