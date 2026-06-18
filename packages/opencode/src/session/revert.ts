@@ -66,12 +66,21 @@ export namespace SessionRevert {
         sessionID: input.sessionID,
         diff: diffs,
       })
+
+      let additions = 0
+      let deletions = 0
+
+      for (let i = 0; i < diffs.length; i++) {
+        additions += diffs[i].additions
+        deletions += diffs[i].deletions
+      }
+
       return Session.setRevert({
         sessionID: input.sessionID,
         revert,
         summary: {
-          additions: diffs.reduce((sum, x) => sum + x.additions, 0),
-          deletions: diffs.reduce((sum, x) => sum + x.deletions, 0),
+          additions,
+          deletions,
           files: diffs.length,
         },
       })
