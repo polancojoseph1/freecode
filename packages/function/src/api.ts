@@ -215,7 +215,27 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
+    const rawBody = await c.req.text()
+
+    // verify signature
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+    const signature = c.req.header("x-lark-signature")
+
+    if (!timestamp || !nonce || !signature) {
+      return c.json({ error: "Missing signature headers" }, { status: 401 })
+    }
+
+    const crypto = await import("node:crypto")
+    const hash = crypto.createHash("sha256")
+    hash.update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+    const expectedSignature = hash.digest("hex")
+
+    if (signature !== expectedSignature) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    const body = JSON.parse(rawBody) as {
       challenge?: string
       event?: {
         message?: {
