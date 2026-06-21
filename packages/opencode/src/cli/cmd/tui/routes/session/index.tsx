@@ -989,17 +989,29 @@ export function Session() {
       const patches = parsePatch(diffText)
       return patches.map((patch) => {
         const filename = patch.newFileName || patch.oldFileName || "unknown"
-        const cleanFilename = filename.replace(/^[ab]\//, "")
+        let cleanFilename = filename
+        if (filename.length >= 2 && filename.charCodeAt(1) === 47) {
+          const firstChar = filename.charCodeAt(0)
+          if (firstChar === 97 || firstChar === 98) {
+            cleanFilename = filename.slice(2)
+          }
+        }
+
+        let additions = 0
+        let deletions = 0
+        for (let i = 0; i < patch.hunks.length; i++) {
+          const lines = patch.hunks[i].lines
+          for (let j = 0; j < lines.length; j++) {
+            const firstChar = lines[j].charCodeAt(0)
+            if (firstChar === 43) additions++ // '+'
+            else if (firstChar === 45) deletions++ // '-'
+          }
+        }
+
         return {
           filename: cleanFilename,
-          additions: patch.hunks.reduce(
-            (sum, hunk) => sum + hunk.lines.filter((line) => line.startsWith("+")).length,
-            0,
-          ),
-          deletions: patch.hunks.reduce(
-            (sum, hunk) => sum + hunk.lines.filter((line) => line.startsWith("-")).length,
-            0,
-          ),
+          additions,
+          deletions,
         }
       })
     } catch (error) {
