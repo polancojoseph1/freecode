@@ -11,6 +11,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "AUTH_API_URL": {
       "type": "sst.sst.Linkable"
       "value": string
