@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -215,18 +216,43 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+    const signature = c.req.header("x-lark-signature")
+    if (!timestamp || !nonce || !signature) {
+      return c.text("Unauthorized", { status: 401 })
+    }
+
+    const rawBody = await c.req.text()
+
+    const expectedSignature = createHash("sha256")
+      .update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+      .digest("hex")
+
+    const sigBuf = Buffer.from(signature)
+    const expectedSigBuf = Buffer.from(expectedSignature)
+    if (sigBuf.length !== expectedSigBuf.length || !timingSafeEqual(sigBuf, expectedSigBuf)) {
+      return c.text("Unauthorized", { status: 401 })
+    }
+
+    let body
+    try {
+      body = JSON.parse(rawBody) as {
+        challenge?: string
+        event?: {
+          message?: {
+            message_id?: string
+            root_id?: string
+            parent_id?: string
+            chat_id?: string
+            content?: string
+          }
         }
       }
+    } catch (err) {
+      return c.text("Invalid JSON", { status: 400 })
     }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
