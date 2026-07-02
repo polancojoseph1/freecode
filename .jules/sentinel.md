@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-10-27 - Sanitize HTML with Edge Compatibility
+**Vulnerability:** XSS via marked rendering in ContentMarkdown
+**Learning:** SolidJS applications deployed to Cloudflare Workers (Edge) cannot use `DOMPurify` natively on the server because `jsdom` relies on Node.js built-ins. String-based sanitizers like `sanitize-html` must be used instead. Additionally, when using `sanitize-html` with `shiki` syntax highlighting, `span` tags and their specific inline styles (color, background-color, font-style, font-weight) must be explicitly whitelisted, otherwise all syntax highlighting is stripped.
+**Prevention:** Always verify if a package relies on DOM APIs (like `jsdom`) before introducing it to an Edge-deployed web application. Configure string-based sanitizers to explicitly whitelist required styles for syntax highlighting.

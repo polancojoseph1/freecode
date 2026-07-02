@@ -1,6 +1,7 @@
 import { marked } from "marked"
 import { codeToHtml } from "shiki"
 import markedShiki from "marked-shiki"
+import sanitizeHtml from "sanitize-html"
 import { createOverflow, useShareMessages } from "./common"
 import { CopyButton } from "./copy-button"
 import { createResource, createSignal } from "solid-js"
@@ -37,7 +38,24 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const parsed = await markedWithShiki.parse(markdown)
+      // Prevent XSS by sanitizing the markdown output before rendering via innerHTML
+      return sanitizeHtml(parsed, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'span']),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          '*': ['class', 'data-*'],
+          'span': ['class', 'style'], // needed for shiki syntax highlighting
+        },
+        allowedStyles: {
+          '*': {
+            'color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
+            'background-color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
+            'font-style': [/^normal$/, /^italic$/, /^oblique$/],
+            'font-weight': [/^[0-9]+$/, /^normal$/, /^bold$/, /^bolder$/, /^lighter$/],
+          }
+        }
+      })
     },
   )
   const [expanded, setExpanded] = createSignal(false)
