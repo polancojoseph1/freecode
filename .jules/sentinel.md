@@ -24,3 +24,8 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+
+## 2024-05-24 - Command Injection in Tauri App Opener
+**Vulnerability:** Found a command injection vulnerability where an untrusted application name could be passed directly to `tauri_plugin_opener::open_path` in `packages/desktop/src-tauri/src/lib.rs`.
+**Learning:** Even when using higher-level abstractions like `tauri_plugin_opener`, if user input dictates the executable used to open a path, it is trivial to execute arbitrary commands by supplying the name of a command interpreter (e.g., `sh`, `cmd.exe`). The `os::windows::open_in_powershell` method explicitly provided an unsafe escalation path on Windows.
+**Prevention:** Handlers should enforce strict validation on application names. In addition to verifying that the application exists, handlers must explicitly blocklist dangerous built-in command interpreters. Path traversal payloads (`..`) must also be restricted to prevent users from bypassing name checks by climbing directories.

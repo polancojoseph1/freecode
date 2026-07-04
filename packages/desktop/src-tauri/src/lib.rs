@@ -166,23 +166,35 @@ fn resolve_app_path(app_name: &str) -> Option<String> {
 #[tauri::command]
 #[specta::specta]
 fn open_path(_app: AppHandle, path: String, app_name: Option<String>) -> Result<(), String> {
+    if let Some(app) = &app_name {
+        // Security validation
+        if app.contains("..") {
+            return Err("Invalid application name".to_string());
+        }
+
+        // Block dangerous interpreters that could be used for command injection
+        let basename = std::path::Path::new(app)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+
+        let blocklist = [
+            "sh", "bash", "cmd", "cmd.exe", "node", "powershell", "powershell.exe", "wscript", "wscript.exe"
+        ];
+
+        if blocklist.contains(&basename.as_str()) {
+            return Err("Application not allowed".to_string());
+        }
+
+        if !check_app_exists(app) {
+            return Err("Application not found".to_string());
+        }
+    }
+
     #[cfg(target_os = "windows")]
     {
         let app_name = app_name.map(|v| os::windows::resolve_windows_app_path(&v).unwrap_or(v));
-        let is_powershell = app_name.as_ref().is_some_and(|v| {
-            std::path::Path::new(v)
-                .file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| {
-                    name.eq_ignore_ascii_case("powershell")
-                        || name.eq_ignore_ascii_case("powershell.exe")
-                })
-        });
-
-        if is_powershell {
-            return os::windows::open_in_powershell(path);
-        }
-
         return tauri_plugin_opener::open_path(path, app_name.as_deref())
             .map_err(|e| format!("Failed to open path: {e}"));
     }

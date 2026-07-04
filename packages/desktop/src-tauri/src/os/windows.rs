@@ -11,7 +11,7 @@ use windows_sys::Win32::{
             RegGetValueW, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, REG_EXPAND_SZ, REG_SZ,
             RRF_RT_REG_EXPAND_SZ, RRF_RT_REG_SZ,
         },
-        Threading::{CREATE_NEW_CONSOLE, CREATE_NO_WINDOW},
+        Threading::CREATE_NO_WINDOW,
     },
 };
 
@@ -441,23 +441,3 @@ pub fn resolve_windows_app_path(app_name: &str) -> Option<String> {
     None
 }
 
-pub fn open_in_powershell(path: String) -> Result<(), String> {
-    let path = PathBuf::from(path);
-    let dir = if path.is_dir() {
-        path
-    } else if let Some(parent) = path.parent() {
-        parent.to_path_buf()
-    } else {
-        std::env::current_dir()
-            .map_err(|e| format!("Failed to determine current directory: {e}"))?
-    };
-
-    Command::new("powershell.exe")
-        .creation_flags(CREATE_NEW_CONSOLE)
-        .current_dir(dir)
-        .args(["-NoExit"])
-        .spawn()
-        .map_err(|e| format!("Failed to start PowerShell: {e}"))?;
-
-    Ok(())
-}
