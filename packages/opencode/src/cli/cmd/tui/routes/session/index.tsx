@@ -990,16 +990,23 @@ export function Session() {
       return patches.map((patch) => {
         const filename = patch.newFileName || patch.oldFileName || "unknown"
         const cleanFilename = filename.replace(/^[ab]\//, "")
+
+        // ⚡ Bolt: Replaced chained .reduce() and .filter() with a single-pass nested loop
+        // to prevent unnecessary array allocations, significantly speeding up large patch parsing.
+        let additions = 0
+        let deletions = 0
+        for (let i = 0; i < patch.hunks.length; i++) {
+          const lines = patch.hunks[i].lines
+          for (let j = 0; j < lines.length; j++) {
+            const charCode = lines[j].charCodeAt(0)
+            if (charCode === 43) additions++ // '+'
+            else if (charCode === 45) deletions++ // '-'
+          }
+        }
         return {
           filename: cleanFilename,
-          additions: patch.hunks.reduce(
-            (sum, hunk) => sum + hunk.lines.filter((line) => line.startsWith("+")).length,
-            0,
-          ),
-          deletions: patch.hunks.reduce(
-            (sum, hunk) => sum + hunk.lines.filter((line) => line.startsWith("-")).length,
-            0,
-          ),
+          additions,
+          deletions,
         }
       })
     } catch (error) {
