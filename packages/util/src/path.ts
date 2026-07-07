@@ -1,15 +1,41 @@
+// ⚡ Bolt Optimization: Use zero-allocation string iteration instead of
+// regex replacements and array splitting for hot-path path parsing functions.
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  let end = path.length - 1
+  while (end >= 0) {
+    const char = path.charCodeAt(end)
+    if (char !== 47 && char !== 92) break // non-slash
+    end--
+  }
+  if (end < 0) return ""
+  let start = end
+  while (start >= 0) {
+    const char = path.charCodeAt(start)
+    if (char === 47 || char === 92) break // slash
+    start--
+  }
+  return path.slice(start + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  let end = path.length - 1
+  while (end >= 0) {
+    const char = path.charCodeAt(end)
+    if (char !== 47 && char !== 92) break // non-slash
+    end--
+  }
+  if (end < 0) return "/"
+  let start = end
+  while (start >= 0) {
+    const char = path.charCodeAt(start)
+    if (char === 47 || char === 92) break // slash
+    start--
+  }
+  if (start < 0) return "/"
+  const dir = path.slice(0, start + 1)
+  return dir.replace(/\\/g, "/")
 }
 
 export function getFileExtension(path: string | undefined) {
