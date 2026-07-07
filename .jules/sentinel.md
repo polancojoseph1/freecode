@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## $(date +%Y-%m-%d) - Command Injection in Rust Tauri wslPath
+**Vulnerability:** Found a command injection vulnerability in `packages/desktop/src-tauri/src/lib.rs` where user-provided paths were interpolated directly into a shell string using `format!("wslpath {flag} \"$HOME{escaped}\"")` and executed via `sh -lc`.
+**Learning:** In Rust (just like in Node.js), constructing shell strings via string interpolation is dangerous, even if naive escaping like `.replace('"', "\\\"")` is used, because shell metacharacters like `$()`, backticks, or other variable expansions can still be executed by the shell.
+**Prevention:** Avoid string interpolation for shell commands. Instead, use discrete positional arguments (e.g., `sh -lc "wslpath \"$1\" \"$HOME$2\"" "--" flag suffix`) so the shell securely interprets the values without risking injection.
