@@ -7,10 +7,22 @@ const lru = new Map<string, number>()
 let total = 0
 
 export function approxBytes(content: FileContent) {
-  const patchBytes =
-    content.patch?.hunks.reduce((sum, hunk) => {
-      return sum + hunk.lines.reduce((lineSum, line) => lineSum + line.length, 0)
-    }, 0) ?? 0
+  let patchBytes = 0
+  const hunks = content.patch?.hunks
+
+  // Optimized: Replaced chained .reduce() methods with nested for-loops.
+  // This avoids creating unnecessary intermediate function closure allocations
+  // for every single line and hunk, significantly speeding up calculation on large files.
+  if (hunks) {
+    for (let i = 0; i < hunks.length; i++) {
+      const lines = hunks[i].lines
+      let hunkBytes = 0
+      for (let j = 0; j < lines.length; j++) {
+        hunkBytes += lines[j].length
+      }
+      patchBytes += hunkBytes
+    }
+  }
 
   return (content.content.length + (content.diff?.length ?? 0) + patchBytes) * 2
 }
