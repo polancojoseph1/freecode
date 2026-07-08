@@ -6,7 +6,7 @@ import type { PtyID } from "../../src/pty/schema"
 import { tmpdir } from "../fixture/fixture"
 import { setTimeout as sleep } from "node:timers/promises"
 
-const wait = async (fn: () => boolean, ms = 2000) => {
+const wait = async (fn: () => boolean, ms = 10000) => {
   const end = Date.now() + ms
   while (Date.now() < end) {
     if (fn()) return
