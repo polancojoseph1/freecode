@@ -76,9 +76,11 @@ export namespace Identifier {
 
   /** Extract timestamp from an ascending ID. Does not work with descending IDs. */
   export function timestamp(id: string): number {
-    const prefix = id.split("_")[0]
-    const hex = id.slice(prefix.length + 1, prefix.length + 13)
-    const encoded = BigInt("0x" + hex)
-    return Number(encoded / BigInt(0x1000))
+    // Optimization: Avoid .split() array allocation and use native Number parsing instead of BigInt
+    // since a 12-char hex string fits safely within Number.MAX_SAFE_INTEGER.
+    const index = id.indexOf("_")
+    const hex = id.slice(index + 1, index + 13)
+    const encoded = parseInt(hex, 16)
+    return Math.floor(encoded / 0x1000)
   }
 }
