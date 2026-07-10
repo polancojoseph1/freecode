@@ -85,7 +85,11 @@ function decodeBase64Utf8(value: string) {
 
   try {
     const raw = atob(value)
-    const bytes = Uint8Array.from(raw, (x) => x.charCodeAt(0))
+    // ⚡ Bolt: Direct loop is faster than Uint8Array.from mapping for base64 conversion
+    const bytes = new Uint8Array(raw.length)
+    for (let i = 0; i < raw.length; i++) {
+      bytes[i] = raw.charCodeAt(i)
+    }
     if (typeof TextDecoder === "function") return new TextDecoder().decode(bytes)
     return raw
   } catch {}

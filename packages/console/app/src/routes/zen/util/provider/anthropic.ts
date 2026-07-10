@@ -121,7 +121,11 @@ export const anthropicHelper: ProviderHelper = ({ reqModel, providerModel }) => 
               const parsedDataResult = JSON.parse(data)
               delete parsedDataResult.p
               const binary = atob(parsedDataResult.bytes)
-              const uint8 = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+              // ⚡ Bolt: Direct loop is faster than Uint8Array.from mapping for base64 conversion
+              const uint8 = new Uint8Array(binary.length)
+              for (let i = 0; i < binary.length; i++) {
+                uint8[i] = binary.charCodeAt(i)
+              }
               const bytes = decoder.decode(uint8)
               const eventName = JSON.parse(bytes).type
               messages.push([`event: ${eventName}`, "\n", `data: ${bytes}`, "\n\n"].join(""))
