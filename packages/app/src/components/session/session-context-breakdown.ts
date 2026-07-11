@@ -75,44 +75,35 @@ export function estimateSessionContextBreakdown(args: {
 }) {
   if (!args.input) return []
 
-  const counts = args.messages.reduce(
-    (acc, msg) => {
-      const parts = args.parts[msg.id] ?? []
-      if (msg.role === "user") {
-        const user = parts.reduce((sum, part) => sum + charsFromUserPart(part), 0)
-        return { ...acc, user: acc.user + user }
-      }
+  let systemCount = args.systemPrompt?.length ?? 0
+  let userCount = 0
+  let assistantCount = 0
+  let toolCount = 0
 
-      if (msg.role !== "assistant") return acc
-      const assistant = parts.reduce(
-        (sum, part) => {
-          const next = charsFromAssistantPart(part)
-          return {
-            assistant: sum.assistant + next.assistant,
-            tool: sum.tool + next.tool,
-          }
-        },
-        { assistant: 0, tool: 0 },
-      )
-      return {
-        ...acc,
-        assistant: acc.assistant + assistant.assistant,
-        tool: acc.tool + assistant.tool,
+  for (let i = 0; i < args.messages.length; i++) {
+    const msg = args.messages[i];
+    const parts = args.parts[msg.id];
+
+    if (!parts) continue;
+
+    if (msg.role === "user") {
+      for (let j = 0; j < parts.length; j++) {
+        userCount += charsFromUserPart(parts[j]);
       }
-    },
-    {
-      system: args.systemPrompt?.length ?? 0,
-      user: 0,
-      assistant: 0,
-      tool: 0,
-    },
-  )
+    } else if (msg.role === "assistant") {
+      for (let j = 0; j < parts.length; j++) {
+        const next = charsFromAssistantPart(parts[j]);
+        assistantCount += next.assistant;
+        toolCount += next.tool;
+      }
+    }
+  }
 
   const tokens = {
-    system: estimateTokens(counts.system),
-    user: estimateTokens(counts.user),
-    assistant: estimateTokens(counts.assistant),
-    tool: estimateTokens(counts.tool),
+    system: estimateTokens(systemCount),
+    user: estimateTokens(userCount),
+    assistant: estimateTokens(assistantCount),
+    tool: estimateTokens(toolCount),
   }
   const estimated = tokens.system + tokens.user + tokens.assistant + tokens.tool
 
