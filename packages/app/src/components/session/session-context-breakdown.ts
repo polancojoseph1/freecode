@@ -75,38 +75,38 @@ export function estimateSessionContextBreakdown(args: {
 }) {
   if (!args.input) return []
 
-  const counts = args.messages.reduce(
-    (acc, msg) => {
-      const parts = args.parts[msg.id] ?? []
-      if (msg.role === "user") {
-        const user = parts.reduce((sum, part) => sum + charsFromUserPart(part), 0)
-        return { ...acc, user: acc.user + user }
-      }
+  // ⚡ Bolt: Replaced .reduce() and object spreading with simple mutable variables and standard for-loops.
+  // This avoids intermediate array/object allocations and function closures on the hot path.
+  const counts = {
+    system: args.systemPrompt?.length ?? 0,
+    user: 0,
+    assistant: 0,
+    tool: 0,
+  }
 
-      if (msg.role !== "assistant") return acc
-      const assistant = parts.reduce(
-        (sum, part) => {
-          const next = charsFromAssistantPart(part)
-          return {
-            assistant: sum.assistant + next.assistant,
-            tool: sum.tool + next.tool,
-          }
-        },
-        { assistant: 0, tool: 0 },
-      )
-      return {
-        ...acc,
-        assistant: acc.assistant + assistant.assistant,
-        tool: acc.tool + assistant.tool,
+  for (let i = 0; i < args.messages.length; i++) {
+    const msg = args.messages[i]!
+    const msgParts = args.parts[msg.id]
+    if (!msgParts || msgParts.length === 0) continue
+
+    if (msg.role === "user") {
+      let userTokens = 0
+      for (let j = 0; j < msgParts.length; j++) {
+        userTokens += charsFromUserPart(msgParts[j]!)
       }
-    },
-    {
-      system: args.systemPrompt?.length ?? 0,
-      user: 0,
-      assistant: 0,
-      tool: 0,
-    },
-  )
+      counts.user += userTokens
+    } else if (msg.role === "assistant") {
+      let assistantTokens = 0
+      let toolTokens = 0
+      for (let j = 0; j < msgParts.length; j++) {
+        const next = charsFromAssistantPart(msgParts[j]!)
+        assistantTokens += next.assistant
+        toolTokens += next.tool
+      }
+      counts.assistant += assistantTokens
+      counts.tool += toolTokens
+    }
+  }
 
   const tokens = {
     system: estimateTokens(counts.system),
