@@ -50,15 +50,19 @@ function create(prefix: Prefix, descending: boolean, timestamp?: number): string
 
   counter += 1
 
-  let now = BigInt(currentTimestamp) * BigInt(0x1000) + BigInt(counter)
-
-  if (descending) {
-    now = ~now
-  }
+  // ⚡ Bolt: Using native Number arithmetic over BigInt for ID generation avoids expensive allocations.
+  // The maximum generated value fits comfortably within Number.MAX_SAFE_INTEGER.
+  let now = currentTimestamp * 0x1000 + counter
 
   const timeBytes = new Uint8Array(6)
-  for (let i = 0; i < 6; i += 1) {
-    timeBytes[i] = Number((now >> BigInt(40 - 8 * i)) & BigInt(0xff))
+  if (descending) {
+    for (let i = 0; i < 6; i += 1) {
+      timeBytes[i] = (~Math.floor(now / Math.pow(2, 40 - 8 * i))) & 0xff
+    }
+  } else {
+    for (let i = 0; i < 6; i += 1) {
+      timeBytes[i] = Math.floor(now / Math.pow(2, 40 - 8 * i)) & 0xff
+    }
   }
 
   return prefixes[prefix] + "_" + bytesToHex(timeBytes) + randomBase62(LENGTH - 12)
