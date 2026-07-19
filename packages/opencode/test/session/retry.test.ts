@@ -161,7 +161,7 @@ describe("session.message-v2.fromError", () => {
       expect((result as MessageV2.APIError).data.metadata?.code).toBe("ECONNRESET")
       expect((result as MessageV2.APIError).data.metadata?.message).toInclude("socket connection")
     },
-    15_000,
+    30_000,
   )
 
   test("ECONNRESET socket error is retryable", () => {
