@@ -83,11 +83,21 @@ export namespace SessionSummary {
 
   async function summarizeSession(input: { sessionID: SessionID; messages: MessageV2.WithParts[] }) {
     const diffs = await computeDiff({ messages: input.messages })
+
+    // ⚡ Bolt Optimization: Use a single for-loop to calculate additions and deletions
+    // This avoids double iteration over the diffs array and eliminates closure allocations.
+    let additions = 0;
+    let deletions = 0;
+    for (let i = 0; i < diffs.length; i++) {
+      additions += diffs[i]!.additions;
+      deletions += diffs[i]!.deletions;
+    }
+
     await Session.setSummary({
       sessionID: input.sessionID,
       summary: {
-        additions: diffs.reduce((sum, x) => sum + x.additions, 0),
-        deletions: diffs.reduce((sum, x) => sum + x.deletions, 0),
+        additions,
+        deletions,
         files: diffs.length,
       },
     })
