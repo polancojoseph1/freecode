@@ -62,13 +62,16 @@ export namespace Identifier {
     }
     counter++
 
-    let now = BigInt(currentTimestamp) * BigInt(0x1000) + BigInt(counter)
-
-    now = descending ? ~now : now
+    // Optimization: Avoid BigInt allocation for max 53-bit integers by using standard Number math.
+    const now = currentTimestamp * 0x1000 + counter
 
     const timeBytes = Buffer.alloc(6)
     for (let i = 0; i < 6; i++) {
-      timeBytes[i] = Number((now >> BigInt(40 - 8 * i)) & BigInt(0xff))
+      let val = Math.floor(now / Math.pow(2, 40 - 8 * i)) & 0xff
+      if (descending) {
+        val = (~val) & 0xff
+      }
+      timeBytes[i] = val
     }
 
     return prefixes[prefix] + "_" + timeBytes.toString("hex") + randomBase62(LENGTH - 12)
@@ -76,9 +79,10 @@ export namespace Identifier {
 
   /** Extract timestamp from an ascending ID. Does not work with descending IDs. */
   export function timestamp(id: string): number {
-    const prefix = id.split("_")[0]
-    const hex = id.slice(prefix.length + 1, prefix.length + 13)
-    const encoded = BigInt("0x" + hex)
-    return Number(encoded / BigInt(0x1000))
+    // Optimization: Use indexOf and native parseInt for hex strings within safe max ranges.
+    const underscoreIndex = id.indexOf("_")
+    const hex = id.slice(underscoreIndex + 1, underscoreIndex + 13)
+    const encoded = parseInt(hex, 16)
+    return Math.floor(encoded / 0x1000)
   }
 }

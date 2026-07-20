@@ -50,15 +50,16 @@ function create(prefix: Prefix, descending: boolean, timestamp?: number): string
 
   counter += 1
 
-  let now = BigInt(currentTimestamp) * BigInt(0x1000) + BigInt(counter)
-
-  if (descending) {
-    now = ~now
-  }
+  // Optimization: Avoid BigInt allocation for max 53-bit integers by using standard Number math.
+  const now = currentTimestamp * 0x1000 + counter
 
   const timeBytes = new Uint8Array(6)
   for (let i = 0; i < 6; i += 1) {
-    timeBytes[i] = Number((now >> BigInt(40 - 8 * i)) & BigInt(0xff))
+    let val = Math.floor(now / Math.pow(2, 40 - 8 * i)) & 0xff
+    if (descending) {
+      val = (~val) & 0xff
+    }
+    timeBytes[i] = val
   }
 
   return prefixes[prefix] + "_" + bytesToHex(timeBytes) + randomBase62(LENGTH - 12)
