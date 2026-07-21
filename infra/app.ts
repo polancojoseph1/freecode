@@ -6,6 +6,7 @@ export const EMAILOCTOPUS_API_KEY = new sst.Secret("EMAILOCTOPUS_API_KEY")
 const ADMIN_SECRET = new sst.Secret("ADMIN_SECRET")
 const DISCORD_SUPPORT_BOT_TOKEN = new sst.Secret("DISCORD_SUPPORT_BOT_TOKEN")
 const DISCORD_SUPPORT_CHANNEL_ID = new sst.Secret("DISCORD_SUPPORT_CHANNEL_ID")
+const FEISHU_WEBHOOK_SECRET = new sst.Secret("FEISHU_WEBHOOK_SECRET")
 const FEISHU_APP_ID = new sst.Secret("FEISHU_APP_ID")
 const FEISHU_APP_SECRET = new sst.Secret("FEISHU_APP_SECRET")
 const bucket = new sst.cloudflare.Bucket("Bucket")
@@ -24,6 +25,7 @@ export const api = new sst.cloudflare.Worker("Api", {
     ADMIN_SECRET,
     DISCORD_SUPPORT_BOT_TOKEN,
     DISCORD_SUPPORT_CHANNEL_ID,
+    FEISHU_WEBHOOK_SECRET,
     FEISHU_APP_ID,
     FEISHU_APP_SECRET,
   ],

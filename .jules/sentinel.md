@@ -24,3 +24,8 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-07-21 - Authentication Bypass in Webhook Verification
+
+**Vulnerability:** The Feishu webhook endpoint (`/feishu`) accepted incoming requests without verifying the cryptographic signature `x-lark-signature`, allowing any external entity to forge requests and post messages.
+**Learning:** Webhook endpoints mapped to serverless functions often assume requests originate from the expected platform. If verification logic is skipped, it introduces a critical authentication bypass. In Node.js server environments, timing attacks during signature comparisons must be prevented using `timingSafeEqual`. In Cloudflare Workers/Hono, reading the body via `c.req.text()` first avoids consuming the body twice before parsing it with `JSON.parse()`.
+**Prevention:** Always implement signature verification for webhooks at the entry point of the route, returning an early 401 if headers are missing or signatures are invalid. Compare signatures securely using cryptographic equality functions.
