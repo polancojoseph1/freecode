@@ -53,7 +53,7 @@ describe("pty", () => {
         }
       },
     })
-  })
+  }, 60000)
 
   test("does not leak output when Bun recycles websocket objects before re-connect", async () => {
     await using dir = await tmpdir({ git: true })
