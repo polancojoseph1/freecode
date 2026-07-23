@@ -75,38 +75,36 @@ export function estimateSessionContextBreakdown(args: {
 }) {
   if (!args.input) return []
 
-  const counts = args.messages.reduce(
-    (acc, msg) => {
-      const parts = args.parts[msg.id] ?? []
-      if (msg.role === "user") {
-        const user = parts.reduce((sum, part) => sum + charsFromUserPart(part), 0)
-        return { ...acc, user: acc.user + user }
-      }
+  // ⚡ Bolt Optimization: Replaced .reduce() and object spreads with localized mutable variables
+  // and standard nested loops to avoid creating intermediate objects and function closures,
+  // making context breakdown calculations significantly faster.
+  const counts = {
+    system: args.systemPrompt?.length ?? 0,
+    user: 0,
+    assistant: 0,
+    tool: 0,
+  }
 
-      if (msg.role !== "assistant") return acc
-      const assistant = parts.reduce(
-        (sum, part) => {
-          const next = charsFromAssistantPart(part)
-          return {
-            assistant: sum.assistant + next.assistant,
-            tool: sum.tool + next.tool,
-          }
-        },
-        { assistant: 0, tool: 0 },
-      )
-      return {
-        ...acc,
-        assistant: acc.assistant + assistant.assistant,
-        tool: acc.tool + assistant.tool,
+  for (let i = 0; i < args.messages.length; i++) {
+    const msg = args.messages[i]
+    const parts = args.parts[msg.id]
+
+    if (msg.role === "user") {
+      if (parts) {
+        for (let j = 0; j < parts.length; j++) {
+          counts.user += charsFromUserPart(parts[j])
+        }
       }
-    },
-    {
-      system: args.systemPrompt?.length ?? 0,
-      user: 0,
-      assistant: 0,
-      tool: 0,
-    },
-  )
+    } else if (msg.role === "assistant") {
+      if (parts) {
+        for (let j = 0; j < parts.length; j++) {
+          const next = charsFromAssistantPart(parts[j])
+          counts.assistant += next.assistant
+          counts.tool += next.tool
+        }
+      }
+    }
+  }
 
   const tokens = {
     system: estimateTokens(counts.system),
