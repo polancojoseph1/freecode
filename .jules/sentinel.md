@@ -24,3 +24,8 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-05-15 - Strict Header Presence & Buffer.from Length Comparison
+
+**Vulnerability:** Feishu Webhook endpoint was vulnerable to authentication bypass and timing attacks, missing signature verification, lacking checks on required headers, and vulnerable to `timingSafeEqual` length mismatch exceptions.
+**Learning:** Webhook handlers must explicitly check for the presence of signature headers before validation, and `timingSafeEqual` requires `Buffer.from` objects to be explicitly compared for length beforehand to prevent `RangeError` which might leak info. The `timingSafeEqual` function will throw if buffers of unequal length are supplied.
+**Prevention:** Always extract headers explicitly, early return `401` if any are missing. Use `Buffer.from().length` checks alongside `timingSafeEqual` when verifying signatures, and parse the raw body string (`await c.req.text()`) only after reading it for cryptographic hash generation.
