@@ -83,11 +83,20 @@ export namespace SessionSummary {
 
   async function summarizeSession(input: { sessionID: SessionID; messages: MessageV2.WithParts[] }) {
     const diffs = await computeDiff({ messages: input.messages })
+
+    // ⚡ Bolt: Optimize array iterations on backend hot-path by replacing .reduce() with a single for loop
+    let totalAdditions = 0
+    let totalDeletions = 0
+    for (let i = 0; i < diffs.length; i++) {
+      totalAdditions += diffs[i].additions
+      totalDeletions += diffs[i].deletions
+    }
+
     await Session.setSummary({
       sessionID: input.sessionID,
       summary: {
-        additions: diffs.reduce((sum, x) => sum + x.additions, 0),
-        deletions: diffs.reduce((sum, x) => sum + x.deletions, 0),
+        additions: totalAdditions,
+        deletions: totalDeletions,
         files: diffs.length,
       },
     })
