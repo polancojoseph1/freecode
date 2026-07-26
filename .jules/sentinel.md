@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## $(date +%Y-%m-%d) - Feishu Webhook Hash Encoding Mismatch
+**Vulnerability:** When implementing webhook signature validation for Feishu (Lark), computing the expected signature using `.digest("hex")` leads to a denial of service where all valid webhooks are rejected.
+**Learning:** Feishu's webhook signatures (`x-lark-signature`) are base64-encoded strings, not hexadecimal. Comparing a base64 string to a hex string will always fail, even if the underlying bytes match.
+**Prevention:** Always verify the expected encoding format of third-party API signatures (e.g., base64 vs. hex) before implementing cryptographic comparisons.
