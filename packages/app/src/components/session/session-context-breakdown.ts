@@ -75,38 +75,39 @@ export function estimateSessionContextBreakdown(args: {
 }) {
   if (!args.input) return []
 
-  const counts = args.messages.reduce(
-    (acc, msg) => {
-      const parts = args.parts[msg.id] ?? []
-      if (msg.role === "user") {
-        const user = parts.reduce((sum, part) => sum + charsFromUserPart(part), 0)
-        return { ...acc, user: acc.user + user }
-      }
+  const counts = {
+    system: args.systemPrompt?.length ?? 0,
+    user: 0,
+    assistant: 0,
+    tool: 0,
+  }
 
-      if (msg.role !== "assistant") return acc
-      const assistant = parts.reduce(
-        (sum, part) => {
-          const next = charsFromAssistantPart(part)
-          return {
-            assistant: sum.assistant + next.assistant,
-            tool: sum.tool + next.tool,
-          }
-        },
-        { assistant: 0, tool: 0 },
-      )
-      return {
-        ...acc,
-        assistant: acc.assistant + assistant.assistant,
-        tool: acc.tool + assistant.tool,
+  // ⚡ Bolt: Replaced chained reduce() and object spreading with a traditional
+  // nested for loop to eliminate per-element function allocations and intermediary objects
+  // on a potentially hot rendering path.
+  for (let i = 0; i < args.messages.length; i++) {
+    const msg = args.messages[i]
+    const parts = args.parts[msg.id]
+    if (!parts) continue
+
+    if (msg.role === "user") {
+      let userSum = 0
+      for (let j = 0; j < parts.length; j++) {
+        userSum += charsFromUserPart(parts[j])
       }
-    },
-    {
-      system: args.systemPrompt?.length ?? 0,
-      user: 0,
-      assistant: 0,
-      tool: 0,
-    },
-  )
+      counts.user += userSum
+    } else if (msg.role === "assistant") {
+      let assistantSum = 0
+      let toolSum = 0
+      for (let j = 0; j < parts.length; j++) {
+        const next = charsFromAssistantPart(parts[j])
+        assistantSum += next.assistant
+        toolSum += next.tool
+      }
+      counts.assistant += assistantSum
+      counts.tool += toolSum
+    }
+  }
 
   const tokens = {
     system: estimateTokens(counts.system),
