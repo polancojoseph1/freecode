@@ -81,6 +81,10 @@ declare module "sst" {
     "FEISHU_APP_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
+    },
+    "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "GITHUB_APP_ID": {
       "type": "sst.sst.Secret"
