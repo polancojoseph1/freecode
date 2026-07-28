@@ -10,9 +10,10 @@ export function approxBytes(content: FileContent) {
   let patchBytes = 0
   // Performance optimization: Using standard nested for loops instead of
   // .reduce() to avoid creating intermediate functions and closures in this hot-path.
-  if (content.patch?.hunks) {
-    for (let i = 0; i < content.patch.hunks.length; i++) {
-      const lines = content.patch.hunks[i].lines
+  const hunks = content.patch?.hunks
+  if (hunks) {
+    for (let i = 0; i < hunks.length; i++) {
+      const lines = hunks[i].lines
       for (let j = 0; j < lines.length; j++) {
         patchBytes += lines[j].length
       }
