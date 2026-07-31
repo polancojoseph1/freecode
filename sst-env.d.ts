@@ -294,6 +294,10 @@ declare module "sst" {
       "name": string
       "type": "sst.cloudflare.Bucket"
     }
+    "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
   }
 }
 /// <reference path="sst-env.d.ts" />
