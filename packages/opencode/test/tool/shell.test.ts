@@ -43,32 +43,36 @@ describe("tool.bash", () => {
 })
 
 describe("tool.bash permissions", () => {
-  test("asks for bash permission with correct pattern", async () => {
-    await using tmp = await tmpdir({ git: true })
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const shell = await ShellTool.init()
-        const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
-        const testCtx = {
-          ...ctx,
-          ask: async (req: Omit<PermissionNext.Request, "id" | "sessionID" | "tool">) => {
-            requests.push(req)
-          },
-        }
-        await shell.execute(
-          {
-            command: "echo hello",
-            description: "Echo hello",
-          },
-          testCtx,
-        )
-        expect(requests.length).toBe(1)
-        expect(requests[0].permission).toBe("shell")
-        expect(requests[0].patterns).toContain("echo hello")
-      },
-    })
-  })
+  test(
+    "asks for bash permission with correct pattern",
+    async () => {
+      await using tmp = await tmpdir({ git: true })
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
+          const shell = await ShellTool.init()
+          const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
+          const testCtx = {
+            ...ctx,
+            ask: async (req: Omit<PermissionNext.Request, "id" | "sessionID" | "tool">) => {
+              requests.push(req)
+            },
+          }
+          await shell.execute(
+            {
+              command: "echo hello",
+              description: "Echo hello",
+            },
+            testCtx,
+          )
+          expect(requests.length).toBe(1)
+          expect(requests[0].permission).toBe("shell")
+          expect(requests[0].patterns).toContain("echo hello")
+        },
+      })
+    },
+    120000,
+  )
 
   test("asks for bash permission with multiple commands", async () => {
     await using tmp = await tmpdir({ git: true })

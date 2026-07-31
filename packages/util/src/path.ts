@@ -1,40 +1,15 @@
-// ⚡ Bolt Optimization: Avoid expensive regex and array allocations.
-// We use manual loop traversal for trailing slash stripping and
-// native lastIndexOf for path segmentation which is ~3x faster.
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  let end = path.length;
-  while (end > 0) {
-    const ch = path[end - 1];
-    if (ch === '/' || ch === '\\') end--;
-    else break;
-  }
-  if (end === 0) return "";
-  const ls = path.lastIndexOf('/', end - 1);
-  const lbs = path.lastIndexOf('\\', end - 1);
-  const maxIndex = ls > lbs ? ls : lbs;
-  return path.slice(maxIndex + 1, end);
+  const trimmed = path.replace(/[\/\\]+$/, "")
+  const parts = trimmed.split(/[\/\\]/)
+  return parts[parts.length - 1] ?? ""
 }
 
-// ⚡ Bolt Optimization: Avoid expensive regex and array allocations.
-// We use manual loop traversal for trailing slash stripping and
-// native lastIndexOf for path segmentation which is ~3x faster.
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  let end = path.length;
-  while (end > 0) {
-    const ch = path[end - 1];
-    if (ch === '/' || ch === '\\') end--;
-    else break;
-  }
-  if (end === 0) return "/";
-  const ls = path.lastIndexOf('/', end - 1);
-  const lbs = path.lastIndexOf('\\', end - 1);
-  const maxIndex = ls > lbs ? ls : lbs;
-  if (maxIndex === -1) return "/";
-
-  const dirPart = path.slice(0, maxIndex);
-  return (lbs !== -1 ? dirPart.replace(/\\/g, "/") : dirPart) + "/";
+  const trimmed = path.replace(/[\/\\]+$/, "")
+  const parts = trimmed.split(/[\/\\]/)
+  return parts.slice(0, parts.length - 1).join("/") + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
