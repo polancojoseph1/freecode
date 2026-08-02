@@ -356,17 +356,27 @@ export namespace File {
           .readdir(Instance.directory, { withFileTypes: true })
           .catch(() => [] as fs.Dirent[])
 
-        for (const entry of top) {
-          if (!entry.isDirectory()) continue
-          if (shouldIgnore(entry.name)) continue
+        // ⚡ Bolt Performance Optimization:
+        // Replaced sequential `for...of` loop awaiting `readdir` with concurrent `Promise.all`.
+        // This eliminates the N+1 synchronous read blocking issue when scanning the global home directory,
+        // allowing all top-level child directories to be scanned concurrently for significantly faster startup.
+        const validTopEntries = top.filter(entry => entry.isDirectory() && !shouldIgnore(entry.name))
+        for (const entry of validTopEntries) {
           dirs.add(entry.name + "/")
+        }
 
+        const childPromises = validTopEntries.map(async (entry) => {
           const base = path.join(Instance.directory, entry.name)
           const children = await fs.promises.readdir(base, { withFileTypes: true }).catch(() => [] as fs.Dirent[])
+          return { entryName: entry.name, children }
+        })
+
+        const childResults = await Promise.all(childPromises)
+        for (const { entryName, children } of childResults) {
           for (const child of children) {
             if (!child.isDirectory()) continue
             if (shouldIgnoreNested(child.name)) continue
-            dirs.add(entry.name + "/" + child.name + "/")
+            dirs.add(entryName + "/" + child.name + "/")
           }
         }
 
