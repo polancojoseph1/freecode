@@ -129,7 +129,10 @@ describe("pty", () => {
           ctx.connId = 2
 
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          for (let i = 0; i < 50; i++) {
+            if (out.join("").includes("AAA")) break
+            await sleep(100)
+          }
 
           expect(out.join("")).toContain("AAA")
         } finally {
