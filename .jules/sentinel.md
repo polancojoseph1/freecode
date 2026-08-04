@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2025-02-28 - Webhook Signature Parsing
+**Vulnerability:** The `/feishu` webhook endpoint lacked any signature validation and processed unauthenticated POST requests.
+**Learning:** Cloudflare Workers/Hono will consume the request body stream when using `await c.req.json()`. If signature validation requires the raw request body as a string, you must use `await c.req.text()` first, compute the hash, and then manually run `JSON.parse()` on the string.
+**Prevention:** Always extract raw bodies for webhook verification first and manually parse JSON rather than relying on framework JSON helpers that consume the stream implicitly.
