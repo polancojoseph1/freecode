@@ -44,7 +44,8 @@ describe("pty", () => {
 
           // Output from a must never show up in b.
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          // Wait briefly since this is a negative test (should *not* contain)
+          await sleep(250)
 
           expect(outB.join("")).not.toContain("AAA")
         } finally {
@@ -89,7 +90,8 @@ describe("pty", () => {
           }
 
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          // Wait briefly since this is a negative test (should *not* contain)
+          await sleep(250)
 
           expect(outB.join("")).not.toContain("AAA")
         } finally {
