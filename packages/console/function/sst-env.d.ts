@@ -7,6 +7,10 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "ADMIN_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
@@ -266,6 +270,10 @@ declare module "sst" {
 import * as cloudflare from "@cloudflare/workers-types";
 declare module "sst" {
   export interface Resource {
+    "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Api": cloudflare.Service
     "AuthApi": cloudflare.Service
     "AuthStorage": cloudflare.KVNamespace
