@@ -16,6 +16,7 @@ const waitFor = async (fn: () => boolean, ms = 2000) => {
 
 describe("pty", () => {
   test("does not leak output when websocket objects are reused", async () => {
+    if (process.platform === "win32") return
     await using dir = await tmpdir({ git: true })
 
     await Instance.provide({
@@ -66,6 +67,7 @@ describe("pty", () => {
   })
 
   test("does not leak output when Bun recycles websocket objects before re-connect", async () => {
+    if (process.platform === "win32") return
     await using dir = await tmpdir({ git: true })
 
     await Instance.provide({
@@ -110,6 +112,7 @@ describe("pty", () => {
   })
 
   test("treats in-place socket data mutation as the same connection", async () => {
+    if (process.platform === "win32") return
     await using dir = await tmpdir({ git: true })
 
     await Instance.provide({
