@@ -4,6 +4,16 @@ import { Pty } from "../../src/pty"
 import { tmpdir } from "../fixture/fixture"
 import { setTimeout as sleep } from "node:timers/promises"
 
+
+const waitFor = async (fn: () => boolean, ms = 2000) => {
+  const end = Date.now() + ms
+  while (Date.now() < end) {
+    if (fn()) return
+    await sleep(25)
+  }
+  throw new Error("timeout waiting for pty events")
+}
+
 describe("pty", () => {
   test("does not leak output when websocket objects are reused", async () => {
     await using dir = await tmpdir({ git: true })
@@ -44,7 +54,7 @@ describe("pty", () => {
 
           // Output from a must never show up in b.
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          await sleep(500)
 
           expect(outB.join("")).not.toContain("AAA")
         } finally {
@@ -89,7 +99,7 @@ describe("pty", () => {
           }
 
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          await sleep(500)
 
           expect(outB.join("")).not.toContain("AAA")
         } finally {
@@ -129,8 +139,7 @@ describe("pty", () => {
           ctx.connId = 2
 
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
-
+          await waitFor(() => out.join("").includes("AAA"), 5000)
           expect(out.join("")).toContain("AAA")
         } finally {
           await Pty.remove(a.id)
