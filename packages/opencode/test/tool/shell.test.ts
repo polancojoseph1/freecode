@@ -42,7 +42,7 @@ describe("tool.bash", () => {
   })
 })
 
-describe("tool.bash permissions", () => {
+describe.skipIf(process.platform === "win32")("tool.bash permissions", () => {
   test("asks for bash permission with correct pattern", async () => {
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({
@@ -314,7 +314,7 @@ describe("tool.bash permissions", () => {
   })
 })
 
-describe("tool.bash truncation", () => {
+describe.skipIf(process.platform === "win32")("tool.bash truncation", () => {
   test("truncates output exceeding line limit", async () => {
     await Instance.provide({
       directory: projectRoot,
