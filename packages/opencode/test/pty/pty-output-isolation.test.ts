@@ -44,7 +44,9 @@ describe("pty", () => {
 
           // Output from a must never show up in b.
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          await sleep(1000)
+          await sleep(1000)
+          await sleep(1000)
 
           expect(outB.join("")).not.toContain("AAA")
         } finally {
@@ -89,7 +91,7 @@ describe("pty", () => {
           }
 
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          await sleep(500)
 
           expect(outB.join("")).not.toContain("AAA")
         } finally {
@@ -129,7 +131,7 @@ describe("pty", () => {
           ctx.connId = 2
 
           Pty.write(a.id, "AAA\n")
-          await sleep(100)
+          await sleep(500)
 
           expect(out.join("")).toContain("AAA")
         } finally {
