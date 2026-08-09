@@ -73,7 +73,7 @@ describe("pty", () => {
           const info = await Pty.create({ command: "/bin/sh", title: "sh" })
           id = info.id
 
-          await sleep(100)
+          await sleep(500)
 
           await Pty.remove(id)
           await wait(() => pick(log, id!).length >= 3)
