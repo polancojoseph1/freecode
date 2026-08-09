@@ -83,6 +83,8 @@ describe("pty", () => {
 
           // Simulate Bun reusing the same websocket object for another
           // connection before the next onOpen calls Pty.connect.
+          await sleep(50) // let first connection settle
+
           ws.data = { events: { connection: "b" } }
           ws.send = (data: unknown) => {
             outB.push(typeof data === "string" ? data : Buffer.from(data as Uint8Array).toString("utf8"))
