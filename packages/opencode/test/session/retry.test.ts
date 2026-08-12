@@ -133,6 +133,7 @@ describe("session.message-v2.fromError", () => {
     async () => {
       using server = Bun.serve({
         port: 0,
+        idleTimeout: 8,
         async fetch(req) {
           setTimeout(() => server.stop(true), 10)
           return new Response(
