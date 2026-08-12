@@ -133,15 +133,13 @@ describe("session.message-v2.fromError", () => {
     async () => {
       using server = Bun.serve({
         port: 0,
-        idleTimeout: 8,
         async fetch(req) {
+          setTimeout(() => server.stop(true), 10)
           return new Response(
             new ReadableStream({
               async pull(controller) {
                 controller.enqueue("Hello,")
-                await sleep(10000)
-                controller.enqueue(" World!")
-                controller.close()
+                await sleep(500)
               },
             }),
             { headers: { "Content-Type": "text/plain" } },
