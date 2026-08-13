@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2025-05-24 - Command Injection via String Interpolation in Tauri (wslpath)
+**Vulnerability:** Shell command injection via unsanitized user input in `wsl_path` when interpolating the file path into a shell string `format!("wslpath {flag} \"$HOME{escaped}\"")` executed via `sh -lc`.
+**Learning:** Using `String::replace` to escape quotes does not protect against shell metacharacters like `$()` or `;`. When interpolating user input directly into a shell command string, attackers can break out of the string boundary or execute subshells.
+**Prevention:** Avoid string interpolation for shell commands. Use `Command::new("sh").args(["-lc", "wslpath \"$1\" \"$HOME$2\"", "sh", flag, suffix])` to pass user input as positional arguments to the shell script, treating them strictly as data rather than executable code.

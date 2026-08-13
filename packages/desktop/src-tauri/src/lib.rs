@@ -274,10 +274,16 @@ fn wsl_path(path: String, mode: Option<WslPathMode>) -> Result<String, String> {
 
     let output = if path.starts_with('~') {
         let suffix = path.strip_prefix('~').unwrap_or("");
-        let escaped = suffix.replace('"', "\\\"");
-        let cmd = format!("wslpath {flag} \"$HOME{escaped}\"");
         Command::new("wsl")
-            .args(["-e", "sh", "-lc", &cmd])
+            .args([
+                "-e",
+                "sh",
+                "-lc",
+                "wslpath \"$1\" \"$HOME$2\"",
+                "sh",
+                flag,
+                suffix,
+            ])
             .output()
             .map_err(|e| format!("Failed to run wslpath: {e}"))?
     } else {
