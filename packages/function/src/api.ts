@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, timingSafeEqual, createHash } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -215,18 +216,44 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
+    const signature = c.req.header("x-lark-signature")
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+
+    if (!signature || !timestamp || !nonce) {
+      return c.json({ error: "Missing signature headers" }, { status: 401 })
+    }
+
+    const rawBody = await c.req.text()
+    const expectedHash = createHash("sha256")
+      .update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+      .digest("hex")
+
+    const signatureBuf = Buffer.from(signature)
+    const expectedBuf = Buffer.from(expectedHash)
+
+    if (signatureBuf.length !== expectedBuf.length || !timingSafeEqual(signatureBuf, expectedBuf)) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    let body
+    try {
+      body = JSON.parse(rawBody) as {
+        challenge?: string
+        event?: {
+          message?: {
+            message_id?: string
+            root_id?: string
+            parent_id?: string
+            chat_id?: string
+            content?: string
+          }
         }
       }
+    } catch (e) {
+      return c.json({ error: "Invalid JSON" }, { status: 400 })
     }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
