@@ -215,7 +215,30 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
+    const rawBody = await c.req.text()
+    const timestamp = c.req.header("X-Lark-Request-Timestamp")
+    const nonce = c.req.header("X-Lark-Request-Nonce")
+    const signature = c.req.header("X-Lark-Signature")
+
+    if (!timestamp || !nonce || !signature) {
+      return c.json({ error: "Missing signature headers" }, { status: 401 })
+    }
+
+    // The /feishu endpoint in packages/function/src/api.ts secures incoming webhook payloads
+    // by computing a SHA-256 hash (createHash("sha256"), NOT HMAC) using
+    // x-lark-request-timestamp, x-lark-request-nonce, FEISHU_WEBHOOK_SECRET and rawBody
+    // (in that order). The computed hash must be encoded as a hexadecimal string (.digest('hex')),
+    // NOT base64, to correctly match the x-lark-signature header expected by Feishu's API.
+    const { createHash } = await import("node:crypto")
+    const hash = createHash("sha256")
+    hash.update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+    const computedSignature = hash.digest("hex")
+
+    if (signature !== computedSignature) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    const body = JSON.parse(rawBody) as {
       challenge?: string
       event?: {
         message?: {
