@@ -1,6 +1,7 @@
 import { marked } from "marked"
 import { codeToHtml } from "shiki"
 import markedShiki from "marked-shiki"
+import { sanitize } from "./sanitize"
 import { createOverflow, useShareMessages } from "./common"
 import { CopyButton } from "./copy-button"
 import { createResource, createSignal } from "solid-js"
@@ -37,7 +38,8 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const parsed = await markedWithShiki.parse(markdown)
+      return sanitize(parsed)
     },
   )
   const [expanded, setExpanded] = createSignal(false)
