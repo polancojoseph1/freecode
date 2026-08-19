@@ -7,20 +7,10 @@ const lru = new Map<string, number>()
 let total = 0
 
 export function approxBytes(content: FileContent) {
-  // Use for loops instead of Array.prototype.reduce to eliminate per-element
-  // closure allocations on a hot path, saving CPU overhead on large inputs.
-  let patchBytes = 0
-  const hunks = content.patch?.hunks
-  if (hunks) {
-    for (let i = 0; i < hunks.length; i++) {
-      const hunk = hunks[i]
-      if (hunk && hunk.lines) {
-        for (let j = 0; j < hunk.lines.length; j++) {
-          patchBytes += hunk.lines[j]!.length
-        }
-      }
-    }
-  }
+  const patchBytes =
+    content.patch?.hunks.reduce((sum, hunk) => {
+      return sum + hunk.lines.reduce((lineSum, line) => lineSum + line.length, 0)
+    }, 0) ?? 0
 
   return (content.content.length + (content.diff?.length ?? 0) + patchBytes) * 2
 }
