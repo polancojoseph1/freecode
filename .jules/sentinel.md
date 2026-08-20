@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-05-24 - Unauthenticated Feishu Webhook
+**Vulnerability:** The `/feishu` webhook endpoint in `packages/function/src/api.ts` does not verify the signature of incoming requests, meaning anyone can send fake requests and trigger discord bot messages or other actions.
+**Learning:** Webhooks that trigger sensitive actions (like posting to Discord) should verify the payload signature to ensure they came from the trusted sender (Feishu).
+**Prevention:** Implement signature verification for all webhooks, specifically using `X-Lark-Signature` for Feishu.

@@ -215,7 +215,38 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+    const signature = c.req.header("x-lark-signature")
+
+    if (!timestamp || !nonce || !signature) {
+      return c.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const rawBody = await c.req.text()
+
+    // Instead of relying on node:crypto inside the hot path, we use Web Crypto API which is native to Cloudflare Workers
+    const encoder = new TextEncoder()
+    const data = encoder.encode(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const computedSignature = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
+
+    // For true constant-time comparison in JS without node crypto, we can just check character by character and accumulate difference
+    let diff = 0
+    if (signature.length !== computedSignature.length) {
+      diff = 1
+    } else {
+      for (let i = 0; i < signature.length; i++) {
+        diff |= signature.charCodeAt(i) ^ computedSignature.charCodeAt(i)
+      }
+    }
+
+    if (diff !== 0) {
+      return c.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = JSON.parse(rawBody) as {
       challenge?: string
       event?: {
         message?: {
