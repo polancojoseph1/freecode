@@ -38,8 +38,12 @@ export namespace Truncate {
     const cutoff = Identifier.timestamp(Identifier.create("tool", false, Date.now() - RETENTION_MS))
     const entries = await Glob.scan("tool_*", { cwd: DIR, include: "file" }).catch(() => [] as string[])
     for (const entry of entries) {
-      if (Identifier.timestamp(entry) >= cutoff) continue
-      await fs.unlink(path.join(DIR, entry)).catch(() => {})
+      try {
+        if (Identifier.timestamp(entry) >= cutoff) continue
+        await fs.unlink(path.join(DIR, entry)).catch(() => {})
+      } catch {
+        // Handle potential errors if an un-parseable file managed to sneak in
+      }
     }
   }
 
