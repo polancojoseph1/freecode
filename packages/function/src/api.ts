@@ -215,7 +215,40 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
+    // Verify Feishu Webhook Signature
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+    const signature = c.req.header("x-lark-signature")
+    const rawBody = await c.req.text()
+
+    if (!timestamp || !nonce || !signature) {
+      return c.json({ error: "Missing signature headers" }, { status: 401 })
+    }
+
+    // Verify timestamp is within 5 minutes to prevent replay attacks
+    const now = Math.floor(Date.now() / 1000)
+    if (Math.abs(now - parseInt(timestamp)) > 300) {
+      return c.json({ error: "Request expired" }, { status: 401 })
+    }
+
+    const { createHash, timingSafeEqual } = await import("node:crypto")
+    const { Buffer } = await import("node:buffer")
+
+    const hash = createHash("sha256")
+      .update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+      .digest("hex")
+
+    const expectedSignatureBuffer = Buffer.from(signature)
+    const computedSignatureBuffer = Buffer.from(hash)
+
+    if (
+      expectedSignatureBuffer.length !== computedSignatureBuffer.length ||
+      !timingSafeEqual(expectedSignatureBuffer, computedSignatureBuffer)
+    ) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    const body = JSON.parse(rawBody) as {
       challenge?: string
       event?: {
         message?: {
