@@ -236,7 +236,7 @@ export default new Hono<{ Bindings: Env }>()
 
     const hash = createHash("sha256")
       .update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
-      .digest("hex")
+      .digest("hex") // memory explicitly mentions hex
 
     const expectedSignatureBuffer = Buffer.from(signature)
     const computedSignatureBuffer = Buffer.from(hash)
