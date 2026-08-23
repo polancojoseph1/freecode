@@ -1,21 +1,49 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  // Optimized: Avoid regex replace and string.split (which creates intermediate array)
+  // Instead, use native string methods and indices to slice out the filename
+  let end = path.length;
+  while (end > 0 && (path[end - 1] === "/" || path[end - 1] === "\\")) {
+    end--;
+  }
+  if (end === 0) return "";
+
+  const p = path.slice(0, end);
+  const lastSlash = p.lastIndexOf("/");
+  const lastBackslash = p.lastIndexOf("\\");
+  const sepIdx = Math.max(lastSlash, lastBackslash);
+
+  return p.slice(sepIdx + 1);
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  // Optimized: Avoid regex replace and string.split (which creates intermediate array)
+  let end = path.length;
+  while (end > 0 && (path[end - 1] === "/" || path[end - 1] === "\\")) {
+    end--;
+  }
+
+  // If the path was entirely slashes, we return "/" to maintain original behavior and pass existing tests.
+  // We prioritize the test's `expect(getDirectory("/")).toBe("/")` as the source of truth for the codebase state.
+  if (end === 0) return "/";
+
+  const p = path.slice(0, end);
+  const lastSlash = p.lastIndexOf("/");
+  const lastBackslash = p.lastIndexOf("\\");
+  const sepIdx = Math.max(lastSlash, lastBackslash);
+
+  if (sepIdx === -1) return "/";
+
+  return p.slice(0, sepIdx).replace(/\\/g, "/") + "/";
 }
 
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  // Optimized: Avoid string.split (which creates an intermediate array)
+  const lastDot = path.lastIndexOf(".");
+  if (lastDot === -1) return path;
+  return path.slice(lastDot + 1);
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
