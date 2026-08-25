@@ -1,5 +1,6 @@
 import style from "./content-bash.module.css"
 import { createResource, createSignal } from "solid-js"
+import sanitizeHtml from "sanitize-html"
 import { createOverflow, useShareMessages } from "./common"
 import { codeToHtml } from "shiki"
 
@@ -12,29 +13,50 @@ interface Props {
 
 export function ContentBash(props: Props) {
   const messages = useShareMessages()
+
+  const sanitizeConfig = {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["span", "pre", "code", "img"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      "*": ["class", "style"],
+      pre: ["tabindex"],
+      img: ["src", "alt", "title"],
+    },
+    allowedStyles: {
+      "*": {
+        color: [/^.*$/],
+        "background-color": [/^.*$/],
+        "font-style": [/^.*$/],
+        "font-weight": [/^.*$/],
+      },
+    },
+  }
+
   const [commandHtml] = createResource(
     () => props.command,
     async (command) => {
-      return codeToHtml(command || "", {
+      const rawHtml = await codeToHtml(command || "", {
         lang: "bash",
         themes: {
           light: "github-light",
           dark: "github-dark",
         },
       })
+      return sanitizeHtml(rawHtml, sanitizeConfig)
     },
   )
 
   const [outputHtml] = createResource(
     () => props.output,
     async (output) => {
-      return codeToHtml(output || "", {
+      const rawHtml = await codeToHtml(output || "", {
         lang: "console",
         themes: {
           light: "github-light",
           dark: "github-dark",
         },
       })
+      return sanitizeHtml(rawHtml, sanitizeConfig)
     },
   )
 

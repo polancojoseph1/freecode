@@ -4,6 +4,7 @@ import markedShiki from "marked-shiki"
 import { createOverflow, useShareMessages } from "./common"
 import { CopyButton } from "./copy-button"
 import { createResource, createSignal } from "solid-js"
+import sanitizeHtml from "sanitize-html"
 import style from "./content-markdown.module.css"
 
 const markedWithShiki = marked.use(
@@ -37,7 +38,24 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const rawHtml = await markedWithShiki.parse(markdown)
+      return sanitizeHtml(rawHtml, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(["span", "pre", "code", "img"]),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          "*": ["class", "style"],
+          pre: ["tabindex"],
+          img: ["src", "alt", "title"],
+        },
+        allowedStyles: {
+          "*": {
+            color: [/^.*$/],
+            "background-color": [/^.*$/],
+            "font-style": [/^.*$/],
+            "font-weight": [/^.*$/],
+          },
+        },
+      })
     },
   )
   const [expanded, setExpanded] = createSignal(false)
