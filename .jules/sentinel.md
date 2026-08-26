@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-08-26 - Missing Infrastructure Binding for Secrets
+**Vulnerability:** Adding a secret usage in Cloudflare Workers/SST functions without defining and linking the secret in `sst.config.ts` (or `infra/app.ts`) causes a severe runtime crash (Resource Proxy Error / undefined properties), taking down the entire endpoint.
+**Learning:** Secrets aren't magically available just by adding them to `sst-env.d.ts` (which only satisfies TypeScript). They must be explicitly provisioned in the infrastructure as `new sst.Secret(...)` and linked to the worker in the `link` array.
+**Prevention:** Always trace the infrastructure definition (e.g., `infra/app.ts`) when adding new environment variables or secrets to ensure they are properly linked to the executing resource.

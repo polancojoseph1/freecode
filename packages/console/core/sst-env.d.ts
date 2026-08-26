@@ -7,6 +7,11 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+
     "ADMIN_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
