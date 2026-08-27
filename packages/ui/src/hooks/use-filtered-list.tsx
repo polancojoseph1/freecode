@@ -1,7 +1,6 @@
 import fuzzysort from "fuzzysort"
 import { entries, flatMap, groupBy, map, pipe } from "remeda"
-import { createEffect, createMemo, createResource, on } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createEffect, createMemo, createResource, createSignal, on } from "solid-js"
 import { createList } from "solid-list"
 
 export interface FilteredListProps<T> {
@@ -17,15 +16,16 @@ export interface FilteredListProps<T> {
 }
 
 export function useFilteredList<T>(props: FilteredListProps<T>) {
-  const [store, setStore] = createStore<{ filter: string }>({ filter: "" })
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for a simple primitive value to avoid Proxy overhead
+  const [filterQuery, setFilterQuery] = createSignal("")
 
   type Group = { category: string; items: [T, ...T[]] }
   const empty: Group[] = []
 
   const [grouped, { refetch }] = createResource(
     () => ({
-      filter: store.filter,
-      items: typeof props.items === "function" ? props.items(store.filter) : props.items,
+      filter: filterQuery(),
+      items: typeof props.items === "function" ? props.items(filterQuery()) : props.items,
     }),
     async ({ filter, items }) => {
       const query = filter ?? ""
@@ -111,16 +111,16 @@ export function useFilteredList<T>(props: FilteredListProps<T>) {
   )
 
   const onInput = (value: string) => {
-    setStore("filter", value)
+    setFilterQuery(value)
   }
 
   return {
     grouped,
-    filter: () => store.filter,
+    filter: filterQuery,
     flat,
     reset,
     refetch,
-    clear: () => setStore("filter", ""),
+    clear: () => setFilterQuery(""),
     onKeyDown,
     onInput,
     active: list.active,
