@@ -1,21 +1,34 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
+  // Optimized: Use native string methods to avoid array allocations from split()
   const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  if (!trimmed) return ""
+  const slash = trimmed.lastIndexOf('/')
+  const bslash = trimmed.lastIndexOf('\\')
+  const last = slash > bslash ? slash : bslash
+  return last === -1 ? trimmed : trimmed.slice(last + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
+  // Optimized: Use native string methods to avoid array allocations from split()
   const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  if (!trimmed) return "/"
+  const slash = trimmed.lastIndexOf('/')
+  const bslash = trimmed.lastIndexOf('\\')
+  const last = slash > bslash ? slash : bslash
+
+  if (last === -1) return "/"
+  const dir = trimmed.slice(0, last)
+  return (dir.indexOf('\\') !== -1 ? dir.replace(/\\/g, '/') : dir) + '/'
 }
 
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  // Optimized: Use native string methods to avoid array allocations from split()
+  const lastDot = path.lastIndexOf(".")
+  if (lastDot === -1) return path
+  return path.slice(lastDot + 1)
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
