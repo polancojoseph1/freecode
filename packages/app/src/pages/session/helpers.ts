@@ -1,4 +1,4 @@
-import { batch, createMemo, onCleanup, onMount, type Accessor } from "solid-js"
+import { batch, createMemo, createSignal, onCleanup, onMount, type Accessor } from "solid-js"
 import { createStore } from "solid-js/store"
 import { same } from "@/utils/same"
 
@@ -144,7 +144,8 @@ export const getTabReorderIndex = (tabs: readonly string[], from: string, to: st
 }
 
 export const createSizing = () => {
-  const [state, setState] = createStore({ active: false })
+  // ⚡ Bolt: Using createSignal instead of createStore for tracking simple primitive state reduces unnecessary proxy overhead, especially during frequent sizing events.
+  const [active, setActive] = createSignal(false)
   let t: number | undefined
 
   const stop = () => {
@@ -152,7 +153,7 @@ export const createSizing = () => {
       clearTimeout(t)
       t = undefined
     }
-    setState("active", false)
+    setActive(false)
   }
 
   const start = () => {
@@ -160,7 +161,7 @@ export const createSizing = () => {
       clearTimeout(t)
       t = undefined
     }
-    setState("active", true)
+    setActive(true)
   }
 
   onMount(() => {
@@ -179,7 +180,7 @@ export const createSizing = () => {
   })
 
   return {
-    active: () => state.active,
+    active: () => active(),
     start,
     touch() {
       start()
