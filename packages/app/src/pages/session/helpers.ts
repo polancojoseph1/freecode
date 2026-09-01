@@ -1,4 +1,4 @@
-import { batch, createMemo, onCleanup, onMount, type Accessor } from "solid-js"
+import { batch, createMemo, onCleanup, onMount, type Accessor, createSignal } from "solid-js"
 import { createStore } from "solid-js/store"
 import { same } from "@/utils/same"
 
@@ -144,7 +144,9 @@ export const getTabReorderIndex = (tabs: readonly string[], from: string, to: st
 }
 
 export const createSizing = () => {
-  const [state, setState] = createStore({ active: false })
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  // avoids unnecessary proxy overhead.
+  const [active, setActive] = createSignal(false)
   let t: number | undefined
 
   const stop = () => {
@@ -152,7 +154,7 @@ export const createSizing = () => {
       clearTimeout(t)
       t = undefined
     }
-    setState("active", false)
+    setActive(false)
   }
 
   const start = () => {
@@ -160,7 +162,7 @@ export const createSizing = () => {
       clearTimeout(t)
       t = undefined
     }
-    setState("active", true)
+    setActive(true)
   }
 
   onMount(() => {
@@ -179,7 +181,7 @@ export const createSizing = () => {
   })
 
   return {
-    active: () => state.active,
+    active,
     start,
     touch() {
       start()
