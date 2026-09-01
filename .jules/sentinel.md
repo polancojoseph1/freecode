@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## $(date +%Y-%m-%d) - Unhandled Exceptions During Raw Body JSON Parsing
+**Vulnerability:** After switching an endpoint to read the raw request body (e.g., via `await c.req.text()`) for signature verification, parsing it directly via `JSON.parse(rawBody)` without a `try/catch` block allowed malformed payloads to trigger an unhandled exception, causing the worker to crash or return a 500 error.
+**Learning:** While framework methods like `c.req.json()` typically handle invalid JSON gracefully, falling back to manual `JSON.parse` bypasses these protections.
+**Prevention:** Always wrap `JSON.parse` in a `try...catch` block when processing untrusted request bodies and return a safe, generic 400 error upon failure.
