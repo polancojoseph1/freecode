@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, createHash, timingSafeEqual } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -215,18 +216,49 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
+    const rawBody = await c.req.text()
+
+    // Feishu webhook signature verification
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+    const signature = c.req.header("x-lark-signature")
+
+    if (!timestamp || !nonce || !signature) {
+      return c.json({ error: "Missing authentication headers" }, { status: 401 })
+    }
+
+    const expectedSignature = createHash("sha256")
+      .update(timestamp)
+      .update(nonce)
+      .update(Resource.FEISHU_WEBHOOK_SECRET.value)
+      .update(rawBody)
+      .digest("hex")
+
+    const expectedBuf = Buffer.from(expectedSignature)
+    const signatureBuf = Buffer.from(signature)
+
+    if (expectedBuf.length !== signatureBuf.length || !timingSafeEqual(expectedBuf, signatureBuf)) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    let body
+    try {
+      body = JSON.parse(rawBody) as {
+        challenge?: string
+        event?: {
+          message?: {
+            message_id?: string
+            root_id?: string
+            parent_id?: string
+            chat_id?: string
+            content?: string
+          }
         }
       }
+    } catch (e) {
+      return c.json({ error: "Invalid JSON" }, { status: 400 })
     }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
