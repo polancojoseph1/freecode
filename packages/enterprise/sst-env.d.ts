@@ -260,6 +260,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+      "FEISHU_WEBHOOK_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
   }
 }
 // cloudflare 
