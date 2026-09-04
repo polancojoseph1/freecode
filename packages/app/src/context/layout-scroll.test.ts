@@ -1,4 +1,4 @@
-import { describe, expect, test, mock, setSystemTime } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { createScrollPersistence } from "./layout-scroll"
 
 describe("createScrollPersistence", () => {

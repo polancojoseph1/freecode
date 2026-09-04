@@ -128,18 +128,21 @@ describe("session.retry.retryable", () => {
 })
 
 describe("session.message-v2.fromError", () => {
-  test(
-    "converts ECONNRESET socket errors to retryable APIError",
-    async () => {
-      using server = Bun.serve({
+  test("converts ECONNRESET socket errors to retryable APIError", async () => {
+      let server: any;
+      server = Bun.serve({
         port: 0,
-        idleTimeout: 8,
+        idleTimeout: 1, // very short timeout
         async fetch(req) {
+          // Force disconnect by stopping server while stream is active
+          setTimeout(() => {
+            server.stop(true);
+          }, 10);
           return new Response(
             new ReadableStream({
               async pull(controller) {
                 controller.enqueue("Hello,")
-                await sleep(10000)
+                await sleep(5000) // keep connection alive so we can kill it
                 controller.enqueue(" World!")
                 controller.close()
               },
@@ -160,9 +163,7 @@ describe("session.message-v2.fromError", () => {
       expect((result as MessageV2.APIError).data.message).toBe("Connection reset by server")
       expect((result as MessageV2.APIError).data.metadata?.code).toBe("ECONNRESET")
       expect((result as MessageV2.APIError).data.metadata?.message).toInclude("socket connection")
-    },
-    15_000,
-  )
+    }, 5_000)
 
   test("ECONNRESET socket error is retryable", () => {
     const error = new MessageV2.APIError({
