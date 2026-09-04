@@ -1,0 +1,7 @@
+[package]
+name = "test_shlex"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+shlex = "2.0.1"
