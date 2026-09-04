@@ -1,21 +1,44 @@
+// Optimization: We use native string methods (replace, lastIndexOf, slice)
+// instead of regex-based path manipulation and array transformations (split/join).
+// This avoids unnecessary intermediate array and regex allocations, speeding up hot paths.
+
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  const normalized = path.replace(/\\/g, "/")
+
+  let end = normalized.length - 1
+  while (end >= 0 && normalized.charCodeAt(end) === 47 /* '/' */) {
+    end--
+  }
+
+  if (end < 0) return ""
+
+  const lastSlash = normalized.lastIndexOf("/", end)
+  return normalized.slice(lastSlash + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  const normalized = path.replace(/\\/g, "/")
+
+  let end = normalized.length - 1
+  while (end >= 0 && normalized.charCodeAt(end) === 47 /* '/' */) {
+    end--
+  }
+
+  if (end < 0) return "/" // specifically handles root paths to match previous logic
+
+  const lastSlash = normalized.lastIndexOf("/", end)
+  if (lastSlash === -1) return "/"
+
+  return normalized.slice(0, lastSlash + 1)
 }
 
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  const lastDot = path.lastIndexOf(".")
+  if (lastDot === -1) return path
+  return path.slice(lastDot + 1)
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
