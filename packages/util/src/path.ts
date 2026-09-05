@@ -1,21 +1,38 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  // Optimized: use native string methods and iteration over regex/split to prevent array allocations
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === '/' || path[end] === '\\')) {
+    end--
+  }
+  if (end < 0) return ""
+  const lastSlash = path.lastIndexOf('/', end)
+  const lastBackslash = path.lastIndexOf('\\', end)
+  const lastSep = Math.max(lastSlash, lastBackslash)
+  return path.slice(lastSep + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  // Optimized: use native string methods and slicing instead of split/join to avoid allocations
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === '/' || path[end] === '\\')) {
+    end--
+  }
+  if (end < 0) return "/" // return root for paths that are only slashes
+  const lastSlash = path.lastIndexOf('/', end)
+  const lastBackslash = path.lastIndexOf('\\', end)
+  const lastSep = Math.max(lastSlash, lastBackslash)
+  if (lastSep < 0) return "/"
+  const dir = path.slice(0, lastSep + 1)
+  return dir.includes('\\') ? dir.replace(/\\/g, "/") : dir
 }
 
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  // Optimized: use lastIndexOf instead of split to prevent array allocations
+  const lastDot = path.lastIndexOf(".")
+  return lastDot < 0 ? path : path.slice(lastDot + 1)
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
