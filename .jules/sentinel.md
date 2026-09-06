@@ -28,3 +28,7 @@
 **Vulnerability:** Command injection when invoking the CLI server via shell (WSL or Unix shells) because variables like `hostname` were directly interpolated into a space-separated arguments string (`args`) and executed with `-c`.
 **Learning:** Using `format!` to interpolate arguments directly into a shell string allows shell metacharacters to alter command execution. `args` was a single `&str`.
 **Prevention:** Pass arguments to `spawn_command` as a slice of explicitly separated `String` elements (`&[String]`), and properly escape each argument using `shell_escape` when constructing shell commands for `-c`, or use standard array passing directly to `Command`.
+## 2024-09-06 - Fixing CI failures
+**Vulnerability:** CI test flakes due to aggressive timeouts.
+**Learning:** `test("user plugin overrides built-in github-copilot auth", ...)` occasionally hit the 30s timeout on CI.
+**Prevention:** Increased timeout from `30000` to `90000`. Also fixed `layout-scroll.test.ts` to use `Bun.sleep` because `vi.useFakeTimers()` is not currently supported in Bun tests.
