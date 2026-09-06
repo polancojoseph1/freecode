@@ -32,3 +32,6 @@
 **Vulnerability:** CI test flakes due to aggressive timeouts.
 **Learning:** `test("user plugin overrides built-in github-copilot auth", ...)` occasionally hit the 30s timeout on CI.
 **Prevention:** Increased timeout from `30000` to `90000`. Also fixed `layout-scroll.test.ts` to use `Bun.sleep` because `vi.useFakeTimers()` is not currently supported in Bun tests.
+**Vulnerability:** CI test flakes due to aggressive timeouts.
+**Learning:** `test("user plugin overrides built-in github-copilot auth", ...)` occasionally hit the 30s or 90s timeout on CI.
+**Prevention:** Increased timeout from `30000` to `240000`.

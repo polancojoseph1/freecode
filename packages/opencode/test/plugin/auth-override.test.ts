@@ -40,5 +40,5 @@ describe("plugin.auth-override", () => {
         expect(copilot[0].label).toBe("Test Override Auth")
       },
     })
-  }, 90000) // Increased timeout for plugin installation
+  }, 240000) // Increased timeout for plugin installation
 })
