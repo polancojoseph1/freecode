@@ -83,7 +83,12 @@ impl CommandChild {
 }
 
 pub async fn get_config(app: &AppHandle) -> Option<Config> {
-    let (events, _) = spawn_command(app, "debug config", &[]).ok()?;
+    let (events, _) = spawn_command(
+        app,
+        &["debug".to_string(), "config".to_string()],
+        &[],
+    )
+    .ok()?;
 
     events
         .fold(String::new(), async |mut config_str, event| {
@@ -365,7 +370,7 @@ fn merge_shell_env(
 
 pub fn spawn_command(
     app: &tauri::AppHandle,
-    args: &str,
+    args: &[String],
     extra_env: &[(&str, String)],
 ) -> Result<(impl Stream<Item = CommandEvent> + 'static, CommandChild), std::io::Error> {
     let state_dir = app
@@ -424,7 +429,12 @@ pub fn spawn_command(
                     .map(|(key, value)| format!("{}={}", key, shell_escape(value))),
             );
 
-            script.push(format!("{} exec \"$BIN\" {}", env_prefix.join(" "), args));
+            let mut script_line = format!("{} exec \"$BIN\"", env_prefix.join(" "));
+            for arg in args {
+                script_line.push_str(" ");
+                script_line.push_str(&shell_escape(arg));
+            }
+            script.push(script_line);
 
             let mut cmd = Command::new("wsl");
             cmd.args(["-e", "bash", "-lc", &script.join("\n")]);
@@ -432,7 +442,7 @@ pub fn spawn_command(
         } else {
             let sidecar = get_sidecar_path(app);
             let mut cmd = Command::new(sidecar);
-            cmd.args(args.split_whitespace());
+            cmd.args(args);
 
             for (key, value) in envs {
                 cmd.env(key, value);
@@ -445,11 +455,15 @@ pub fn spawn_command(
         let shell = get_user_shell();
         let envs = merge_shell_env(load_shell_env(&shell), envs);
 
-        let line = if shell.ends_with("/nu") {
-            format!("^\"{}\" {}", sidecar.display(), args)
+        let mut line = if shell.ends_with("/nu") {
+            format!("^\"{}\"", sidecar.display())
         } else {
-            format!("\"{}\" {}", sidecar.display(), args)
+            format!("\"{}\"", sidecar.display())
         };
+        for arg in args {
+            line.push_str(" ");
+            line.push_str(&shell_escape(arg));
+        }
 
         let mut cmd = Command::new(shell);
         cmd.args(["-l", "-c", &line]);
@@ -566,7 +580,16 @@ pub fn serve(
 
     let (events, child) = spawn_command(
         app,
-        format!("--print-logs --log-level WARN serve --hostname {hostname} --port {port}").as_str(),
+        &[
+            "--print-logs".to_string(),
+            "--log-level".to_string(),
+            "WARN".to_string(),
+            "serve".to_string(),
+            "--hostname".to_string(),
+            hostname.to_string(),
+            "--port".to_string(),
+            port.to_string(),
+        ],
         &envs,
     )
     .expect("Failed to spawn opencode");

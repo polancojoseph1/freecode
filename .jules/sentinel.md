@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-09-06 - Prevent Command Injection in spawn_command
+**Vulnerability:** Command injection when invoking the CLI server via shell (WSL or Unix shells) because variables like `hostname` were directly interpolated into a space-separated arguments string (`args`) and executed with `-c`.
+**Learning:** Using `format!` to interpolate arguments directly into a shell string allows shell metacharacters to alter command execution. `args` was a single `&str`.
+**Prevention:** Pass arguments to `spawn_command` as a slice of explicitly separated `String` elements (`&[String]`), and properly escape each argument using `shell_escape` when constructing shell commands for `-c`, or use standard array passing directly to `Command`.
