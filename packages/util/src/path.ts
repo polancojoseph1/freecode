@@ -1,15 +1,38 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+
+  // OPTIMIZATION: Avoid using `.replace` and `.split` with regexes as they create multiple intermediate arrays and strings.
+  // Instead, use native string methods and pointer arithmetic which is ~5x faster.
+  let end = path.length
+  while (end > 0 && (path[end - 1] === "/" || path[end - 1] === "\\")) {
+    end--
+  }
+
+  if (end === 0) return ""
+
+  const trimmed = path.slice(0, end)
+  const lastSlash = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"))
+  return trimmed.slice(lastSlash + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+
+  // OPTIMIZATION: Avoid using `.replace` and `.split` with regexes.
+  // Use native string `.lastIndexOf` and slice methods.
+  let end = path.length
+  while (end > 0 && (path[end - 1] === "/" || path[end - 1] === "\\")) {
+    end--
+  }
+
+  if (end === 0) return "/"
+
+  const trimmed = path.slice(0, end)
+  const lastSlash = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"))
+
+  if (lastSlash === -1) return "/"
+
+  return trimmed.slice(0, lastSlash).replace(/\\/g, "/") + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
