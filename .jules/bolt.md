@@ -43,3 +43,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2024-05-18 - String optimization in Bun vs general Node
 **Learning:** In Bun environments, native array allocation from `String.prototype.split()` for string extraction (like `path.split('.')` to get the last element) is surprisingly faster than using `.lastIndexOf()` and `.slice()`. Conversely, for iterating to trim trailing slashes, backward manual iteration with index lookups (e.g. `path[end] === '/'`) completely bypasses regex parsing and array allocation overhead, outperforming both `.split()` and `.lastIndexOf()` for simple character checks.
 **Action:** Always benchmark different string operation approaches in Bun natively rather than assuming Node.js patterns. Use raw string indexing instead of `.charCodeAt()` to preserve readability when manual loops are strictly necessary on hot paths.
+
+## 2024-05-18 - Instance teardown in test suites
+**Learning:** When tests using `Instance.provide(...)` (like in `packages/opencode/test/...`) cause the GitHub Actions runner to hang and timeout with exit code 143 (runner shutdown signal), it is typically due to missing teardown. Ensure `await Instance.disposeAll()` is called at the end of the test to clean up background handles (like fsmonitor or open database connections) and allow the event loop to exit cleanly. Place this in an `afterAll` or `finally` block so timeouts don't bypass the disposal.
+**Action:** Always wrap `Instance.disposeAll()` in an `afterAll` hook to prevent hanging runners on test failures or timeouts.
