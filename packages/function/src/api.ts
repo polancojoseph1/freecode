@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -215,29 +216,60 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
+    const timestamp = c.req.header("x-lark-request-timestamp")
+    const nonce = c.req.header("x-lark-request-nonce")
+    const signature = c.req.header("x-lark-signature")
+    const rawBody = await c.req.text()
+
+    if (!timestamp || !nonce || !signature) {
+      return c.json({ error: "Missing required headers" }, { status: 400 })
+    }
+
+    const hash = createHash("sha256")
+    hash.update(timestamp + nonce + Resource.FEISHU_WEBHOOK_SECRET.value + rawBody)
+    const expectedSignature = hash.digest("hex")
+
+    const expectedBuffer = Buffer.from(expectedSignature)
+    const actualBuffer = Buffer.from(signature)
+
+    if (expectedBuffer.length !== actualBuffer.length || !timingSafeEqual(expectedBuffer, actualBuffer)) {
+      return c.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    let body
+    try {
+      body = JSON.parse(rawBody) as {
+        challenge?: string
+        event?: {
+          message?: {
+            message_id?: string
+            root_id?: string
+            parent_id?: string
+            chat_id?: string
+            content?: string
+          }
         }
       }
+    } catch (e) {
+      return c.json({ error: "Invalid JSON" }, { status: 400 })
     }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
 
     const content = body.event?.message?.content
-    const parsed =
-      typeof content === "string" && content.trim().startsWith("{")
-        ? (JSON.parse(content) as {
-            text?: string
-          })
-        : undefined
+    let parsed
+    try {
+      parsed =
+        typeof content === "string" && content.trim().startsWith("{")
+          ? (JSON.parse(content) as {
+              text?: string
+            })
+          : undefined
+    } catch (e) {
+      // Ignore inner JSON parse error
+    }
     const text = typeof parsed?.text === "string" ? parsed.text : typeof content === "string" ? content : ""
 
     let message = text.trim().replace(/^@_user_\d+\s*/, "")
