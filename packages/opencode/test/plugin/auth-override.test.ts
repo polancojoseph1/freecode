@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { tmpdir } from "../fixture/fixture"
@@ -6,6 +6,10 @@ import { Instance } from "../../src/project/instance"
 import { ProviderAuth } from "../../src/provider/auth"
 
 describe("plugin.auth-override", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("user plugin overrides built-in github-copilot auth", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
