@@ -16,7 +16,7 @@
 **Vulnerability:** Found a command injection vulnerability where a string array `args` was directly concatenated into a shell command for execution (e.g., ``"sh -c \"sidecar\" " + args``) in `packages/desktop-electron/src/main/cli.ts`.
 **Learning:** Using `spawn` or `execFile` with an options array directly is preferred over passing an entire string to `sh -c`. If executing via a shell wrapper like `sh -c` is necessary, it is critical to correctly escape all user-influenced string arguments before interpolating them into the final shell command to prevent injection.
 **Prevention:** Use a proven library like `shell-quote` to escape array elements before concatenating them into shell script strings, or prefer passing discrete arguments directly to the spawn function instead of interpolating into a shell wrapper.
-## $(date +%Y-%m-%d) - Prevent Unsafe URL Schemes in shell.openExternal
+## 2025-03-24 - Prevent Unsafe URL Schemes in shell.openExternal
 **Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
 **Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
 **Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2025-03-24 - Unauthenticated Webhook Endpoint
+**Vulnerability:** The `/feishu` webhook endpoint in `packages/function/src/api.ts` processed requests without verifying their origin, allowing anyone to send unauthenticated POST requests and trigger backend actions.
+**Learning:** Webhook endpoints must mathematically verify the payload signature to prevent forged requests. For Feishu, this requires computing a SHA-256 hash using `timestamp + nonce + secret + body` and matching it against the `x-lark-signature` header using a constant-time comparison to prevent timing attacks.
+**Prevention:** Always implement signature verification on webhook endpoints, ensure constant-time comparisons when checking cryptographic signatures, and manually parse raw bodies only after verification succeeds.
