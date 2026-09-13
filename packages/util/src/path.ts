@@ -1,15 +1,35 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  // Optimized: use backward iteration to skip trailing slashes
+  // and find the last path separator instead of regex/split
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === '/' || path[end] === '\\')) {
+    end--
+  }
+  if (end < 0) return ""
+  let start = end
+  while (start >= 0 && path[start] !== '/' && path[start] !== '\\') {
+    start--
+  }
+  return path.slice(start + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  // Optimized: use backward iteration and slicing instead of
+  // regex/split/join to avoid intermediate allocations
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === '/' || path[end] === '\\')) {
+    end--
+  }
+  if (end < 0) return "/"
+  let lastSlash = end
+  while (lastSlash >= 0 && path[lastSlash] !== '/' && path[lastSlash] !== '\\') {
+    lastSlash--
+  }
+  if (lastSlash < 0) return "/"
+
+  return path.slice(0, lastSlash + 1).replace(/\\/g, '/')
 }
 
 export function getFileExtension(path: string | undefined) {
