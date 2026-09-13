@@ -1,5 +1,4 @@
-import { describe, expect, mock, test, afterAll } from "bun:test"
-import { Instance } from "../../src/project/instance"
+import { describe, expect, mock, test } from "bun:test"
 import { Project } from "../../src/project/project"
 import { Log } from "../../src/util/log"
 import { $ } from "bun"
@@ -68,10 +67,6 @@ async function loadProject() {
 }
 
 describe("Project.fromDirectory", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("should handle git repository with no commits", async () => {
     const p = await loadProject()
     await using tmp = await tmpdir()
@@ -144,10 +139,6 @@ describe("Project.fromDirectory", () => {
 })
 
 describe("Project.fromDirectory with worktrees", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("should set worktree to root when called from root", async () => {
     const p = await loadProject()
     await using tmp = await tmpdir({ git: true })
@@ -258,10 +249,6 @@ describe("Project.fromDirectory with worktrees", () => {
 })
 
 describe("Project.discover", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("should discover favicon.png in root", async () => {
     const p = await loadProject()
     await using tmp = await tmpdir({ git: true })
@@ -296,10 +283,6 @@ describe("Project.discover", () => {
 })
 
 describe("Project.update", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("should update name", async () => {
     await using tmp = await tmpdir({ git: true })
     const { project } = await Project.fromDirectory(tmp.path)

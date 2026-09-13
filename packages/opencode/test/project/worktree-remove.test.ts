@@ -1,4 +1,4 @@
-import { describe, expect, test, afterAll } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { $ } from "bun"
 import fs from "fs/promises"
 import path from "path"
@@ -10,10 +10,6 @@ import { tmpdir } from "../fixture/fixture"
 const wintest = process.platform === "win32" ? test : test.skip
 
 describe("Worktree.remove", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("continues when git remove exits non-zero after detaching", async () => {
     await using tmp = await tmpdir({ git: true })
     const root = tmp.path
