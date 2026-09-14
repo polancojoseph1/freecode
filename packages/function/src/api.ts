@@ -215,18 +215,34 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
+    let body;
+    try {
+      body = (await c.req.json()) as {
+        token?: string
+        challenge?: string
+        header?: {
+          token?: string
+        }
+        event?: {
+          message?: {
+            message_id?: string
+            root_id?: string
+            parent_id?: string
+            chat_id?: string
+            content?: string
+          }
         }
       }
+    } catch (e) {
+      return c.json({ error: "Invalid JSON" }, { status: 400 });
     }
+
+    // SECURITY: Authenticate Feishu webhook request
+    const token = body.token || body.header?.token;
+    if (!token || token !== Resource.FEISHU_VERIFICATION_TOKEN.value) {
+      return c.json({ error: "Invalid verification token" }, { status: 401 })
+    }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
