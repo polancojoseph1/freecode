@@ -6,8 +6,8 @@ import { Instance } from "../../src/project/instance"
 import { ProviderAuth } from "../../src/provider/auth"
 
 describe("plugin.auth-override", () => {
-  afterAll(() => {
-    return Instance.disposeAll()
+  afterAll(async () => {
+    await Instance.disposeAll()
   })
 
   test("user plugin overrides built-in github-copilot auth", async () => {
