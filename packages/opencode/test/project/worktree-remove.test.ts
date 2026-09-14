@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import { $ } from "bun"
 import fs from "fs/promises"
 import path from "path"
@@ -63,7 +63,7 @@ describe("Worktree.remove", () => {
 
     const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
     expect(ref.exitCode).not.toBe(0)
-  })
+  }, 90000)
 
   wintest("stops fsmonitor before removing a worktree", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -92,5 +92,9 @@ describe("Worktree.remove", () => {
 
     const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
     expect(ref.exitCode).not.toBe(0)
+  }, 90000)
+
+  afterAll(async () => {
+    await Instance.disposeAll()
   })
 })

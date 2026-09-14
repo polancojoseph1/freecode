@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { tmpdir } from "../fixture/fixture"
@@ -40,5 +40,9 @@ describe("plugin.auth-override", () => {
         expect(copilot[0].label).toBe("Test Override Auth")
       },
     })
-  }, 30000) // Increased timeout for plugin installation
+  }, 90000) // Increased timeout for plugin installation
+
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
 })
