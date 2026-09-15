@@ -1,15 +1,37 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  // Optimized: use manual backward iteration instead of regex replace and split to prevent array allocations
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === "/" || path[end] === "\\")) {
+    end--
+  }
+  if (end < 0) return ""
+  let start = end
+  while (start >= 0 && path[start] !== "/" && path[start] !== "\\") {
+    start--
+  }
+  return path.slice(start + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  // Optimized: use manual backward iteration instead of regex replace and split to prevent array allocations
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === "/" || path[end] === "\\")) {
+    end--
+  }
+  if (end < 0) return "/"
+  let start = end
+  while (start >= 0 && path[start] !== "/" && path[start] !== "\\") {
+    start--
+  }
+  if (start < 0) return "/"
+
+  let res = ""
+  for (let i = 0; i <= start; i++) {
+    res += path[i] === "\\" ? "/" : path[i]
+  }
+  return res
 }
 
 export function getFileExtension(path: string | undefined) {
