@@ -4,6 +4,11 @@ import fs from "fs/promises"
 import { tmpdir } from "../fixture/fixture"
 import { Instance } from "../../src/project/instance"
 import { ProviderAuth } from "../../src/provider/auth"
+import { afterAll } from "bun:test"
+
+afterAll(async () => {
+  await Instance.disposeAll()
+})
 
 describe("plugin.auth-override", () => {
   test("user plugin overrides built-in github-copilot auth", async () => {
@@ -40,5 +45,5 @@ describe("plugin.auth-override", () => {
         expect(copilot[0].label).toBe("Test Override Auth")
       },
     })
-  }, 30000) // Increased timeout for plugin installation
+  }, 90000) // Increased timeout for plugin installation
 })

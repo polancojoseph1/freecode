@@ -7,6 +7,12 @@ import { tmpdir } from "../fixture/fixture"
 import { Filesystem } from "../../src/util/filesystem"
 import { GlobalBus } from "../../src/bus/global"
 import { ProjectID } from "../../src/project/schema"
+import { Instance } from "../../src/project/instance"
+import { afterAll } from "bun:test"
+
+afterAll(async () => {
+  await Instance.disposeAll()
+})
 
 Log.init({ print: false })
 
