@@ -7,6 +7,11 @@ import { tmpdir } from "../fixture/fixture"
 import { PermissionNext } from "../../src/permission/next"
 import { Agent } from "../../src/agent/agent"
 import { SessionID, MessageID } from "../../src/session/schema"
+import { afterAll } from "bun:test"
+
+afterAll(async () => {
+  await Instance.disposeAll()
+})
 
 const FIXTURES_DIR = path.join(import.meta.dir, "fixtures")
 
@@ -22,6 +27,7 @@ const ctx = {
 }
 
 describe("tool.read external_directory permission", () => {
+
   test("allows reading absolute path inside project directory", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -154,6 +160,7 @@ describe("tool.read external_directory permission", () => {
 })
 
 describe("tool.read env file permissions", () => {
+
   const cases: [string, boolean][] = [
     [".env", true],
     [".env.local", true],
