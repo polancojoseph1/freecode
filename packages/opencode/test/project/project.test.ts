@@ -7,6 +7,8 @@ import { tmpdir } from "../fixture/fixture"
 import { Filesystem } from "../../src/util/filesystem"
 import { GlobalBus } from "../../src/bus/global"
 import { ProjectID } from "../../src/project/schema"
+import { Instance } from "../../src/project/instance"
+import { afterAll } from "bun:test"
 
 Log.init({ print: false })
 
@@ -67,6 +69,10 @@ async function loadProject() {
 }
 
 describe("Project.fromDirectory", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("should handle git repository with no commits", async () => {
     const p = await loadProject()
     await using tmp = await tmpdir()
@@ -249,6 +255,10 @@ describe("Project.fromDirectory with worktrees", () => {
 })
 
 describe("Project.discover", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("should discover favicon.png in root", async () => {
     const p = await loadProject()
     await using tmp = await tmpdir({ git: true })
@@ -283,6 +293,10 @@ describe("Project.discover", () => {
 })
 
 describe("Project.update", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("should update name", async () => {
     await using tmp = await tmpdir({ git: true })
     const { project } = await Project.fromDirectory(tmp.path)
