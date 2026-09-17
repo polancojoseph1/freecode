@@ -10,10 +10,6 @@ import { tmpdir } from "../fixture/fixture"
 const wintest = process.platform === "win32" ? test : test.skip
 
 describe("Worktree.remove", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("continues when git remove exits non-zero after detaching", async () => {
     await using tmp = await tmpdir({ git: true })
     const root = tmp.path
@@ -97,4 +93,8 @@ describe("Worktree.remove", () => {
     const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
     expect(ref.exitCode).not.toBe(0)
   })
+})
+
+afterAll(async () => {
+  await Instance.disposeAll().catch(() => {})
 })

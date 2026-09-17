@@ -6,10 +6,6 @@ import { Instance } from "../../src/project/instance"
 import { ProviderAuth } from "../../src/provider/auth"
 
 describe("plugin.auth-override", () => {
-  afterAll(async () => {
-    await Instance.disposeAll()
-  })
-
   test("user plugin overrides built-in github-copilot auth", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -44,5 +40,9 @@ describe("plugin.auth-override", () => {
         expect(copilot[0].label).toBe("Test Override Auth")
       },
     })
-  }, 90000) // Increased timeout for plugin installation in CI
+  }, 30000) // Increased timeout for plugin installation
+})
+
+afterAll(async () => {
+  await Instance.disposeAll().catch(() => {})
 })
