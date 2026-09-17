@@ -6,6 +6,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "FEISHU_VERIFICATION_TOKEN": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "ADMIN_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
