@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { pathToFileURL } from "url"
 import type { PermissionNext } from "../../src/permission/next"
@@ -19,6 +19,10 @@ const baseCtx: Omit<Tool.Context, "ask"> = {
 }
 
 describe("tool.skill", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("description lists skill location URL", async () => {
     await using tmp = await tmpdir({
       git: true,

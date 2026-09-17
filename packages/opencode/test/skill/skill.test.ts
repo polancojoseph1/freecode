@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import {  test, expect , afterAll } from "bun:test"
 import { Skill } from "../../src/skill"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"

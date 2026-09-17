@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import { ACP } from "../../src/acp/agent"
 import type { AgentSideConnection } from "@agentclientprotocol/sdk"
 import type { Event, EventMessagePartUpdated, ToolStatePending, ToolStateRunning } from "@opencode-ai/sdk/v2"
@@ -258,6 +258,10 @@ function createFakeAgent() {
 }
 
 describe("acp.agent event subscription", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("routes message.part.delta by the event sessionID (no cross-session pollution)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({

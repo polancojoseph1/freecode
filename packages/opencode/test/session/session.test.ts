@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Session } from "../../src/session"
 import { Bus } from "../../src/bus"
@@ -11,6 +11,10 @@ const projectRoot = path.join(__dirname, "../..")
 Log.init({ print: false })
 
 describe("session.started event", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("should emit session.started event when session is created", async () => {
     await Instance.provide({
       directory: projectRoot,
@@ -73,6 +77,10 @@ describe("session.started event", () => {
 })
 
 describe("step-finish token propagation via Bus event", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test(
     "non-zero tokens propagate through PartUpdated event",
     async () => {

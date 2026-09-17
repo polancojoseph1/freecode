@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Instance } from "../../src/project/instance"
 import { Server } from "../../src/server/server"
@@ -37,6 +37,10 @@ async function fill(sessionID: SessionID, count: number, time = (i: number) => D
 }
 
 describe("session messages endpoint", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("returns cursor headers for older pages", async () => {
     await Instance.provide({
       directory: root,

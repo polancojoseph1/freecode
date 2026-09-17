@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from "bun:test"
+import {  afterEach, describe, expect, mock, test , afterAll } from "bun:test"
 import { WorkspaceID } from "../../src/control-plane/schema"
 import { Hono } from "hono"
 import { tmpdir } from "../fixture/fixture"
@@ -111,6 +111,10 @@ async function setup(state: State) {
 }
 
 describe("control-plane/session-proxy-middleware", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("forwards non-GET session requests for workspaces", async () => {
     const state: State = {
       workspace: "first",

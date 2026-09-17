@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test"
+import {  afterEach, describe, expect, spyOn, test , afterAll } from "bun:test"
 import path from "path"
 import { GlobalBus } from "../../src/bus/global"
 import { Snapshot } from "../../src/snapshot"
@@ -17,6 +17,10 @@ afterEach(async () => {
 })
 
 describe("project.initGit endpoint", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("initializes git and reloads immediately", async () => {
     await using tmp = await tmpdir()
     const app = Server.Default()

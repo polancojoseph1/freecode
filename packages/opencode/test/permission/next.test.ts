@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import {  test, expect , afterAll } from "bun:test"
 import os from "os"
 import { Bus } from "../../src/bus"
 import { runtime } from "../../src/effect/runtime"

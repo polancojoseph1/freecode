@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import {  describe, test, expect , afterAll } from "bun:test"
 import path from "path"
 import { Instance } from "../../src/project/instance"
 import { WebFetchTool } from "../../src/tool/webfetch"
@@ -26,6 +26,10 @@ const getHeapMB = () => {
 }
 
 describe("memory: abort controller leak", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("webfetch does not leak memory over many invocations", async () => {
     await Instance.provide({
       directory: projectRoot,

@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import {  test, expect , afterAll } from "bun:test"
 import { $ } from "bun"
 import fs from "fs/promises"
 import path from "path"

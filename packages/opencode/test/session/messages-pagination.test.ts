@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
@@ -36,6 +36,10 @@ async function fill(sessionID: SessionID, count: number, time = (i: number) => D
 }
 
 describe("session message pagination", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("pages backward with opaque cursors", async () => {
     await Instance.provide({
       directory: root,

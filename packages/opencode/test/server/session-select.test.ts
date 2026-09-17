@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Session } from "../../src/session"
 import { Log } from "../../src/util/log"
@@ -9,6 +9,10 @@ const projectRoot = path.join(__dirname, "../..")
 Log.init({ print: false })
 
 describe("tui.selectSession endpoint", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("should return 200 when called with valid session", async () => {
     await Instance.provide({
       directory: projectRoot,

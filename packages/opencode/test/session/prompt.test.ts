@@ -1,5 +1,5 @@
 import path from "path"
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import { fileURLToPath } from "url"
 import { Instance } from "../../src/project/instance"
 import { ModelID, ProviderID } from "../../src/provider/schema"
@@ -12,6 +12,10 @@ import { tmpdir } from "../fixture/fixture"
 Log.init({ print: false })
 
 describe("session.prompt missing file", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("does not fail the prompt when a file part is missing", async () => {
     await using tmp = await tmpdir({
       git: true,
@@ -109,6 +113,10 @@ describe("session.prompt missing file", () => {
 })
 
 describe("session.prompt special characters", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("handles filenames with # character", async () => {
     await using tmp = await tmpdir({
       git: true,
@@ -149,6 +157,10 @@ describe("session.prompt special characters", () => {
 })
 
 describe("session.prompt agent variant", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("applies agent variant only when using agent model", async () => {
     const prev = process.env.OPENAI_API_KEY
     process.env.OPENAI_API_KEY = "test-openai-key"

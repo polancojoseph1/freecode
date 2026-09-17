@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import { Pty } from "../../src/pty"
@@ -20,6 +20,10 @@ const pick = (log: Array<{ type: "created" | "exited" | "deleted"; id: PtyID }>,
 }
 
 describe("pty", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("publishes created, exited, deleted in order for /bin/ls + remove", async () => {
     if (process.platform === "win32") return
 

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from "bun:test"
+import {  describe, test, expect, beforeEach , afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { FileTime } from "../../src/file/time"
@@ -7,9 +7,17 @@ import { Filesystem } from "../../src/util/filesystem"
 import { tmpdir } from "../fixture/fixture"
 
 describe("file/time", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   const sessionID = "test-session-123"
 
   describe("read() and get()", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("stores read timestamp", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")
@@ -73,6 +81,10 @@ describe("file/time", () => {
   })
 
   describe("assert()", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("passes when file has not been modified", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")
@@ -172,6 +184,10 @@ describe("file/time", () => {
   })
 
   describe("withLock()", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("executes function within lock", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")
@@ -314,6 +330,10 @@ describe("file/time", () => {
   })
 
   describe("stat() Filesystem.stat pattern", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("reads file modification time via Filesystem.stat()", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")

@@ -1,10 +1,14 @@
-import { describe, test, expect } from "bun:test"
+import {  describe, test, expect , afterAll } from "bun:test"
 import { PermissionNext } from "../src/permission/next"
 import { Config } from "../src/config/config"
 import { Instance } from "../src/project/instance"
 import { tmpdir } from "./fixture/fixture"
 
 describe("PermissionNext.evaluate for permission.task", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   const createRuleset = (rules: Record<string, "allow" | "deny" | "ask">): PermissionNext.Ruleset =>
     Object.entries(rules).map(([pattern, action]) => ({
       permission: "task",
@@ -68,6 +72,10 @@ describe("PermissionNext.evaluate for permission.task", () => {
 })
 
 describe("PermissionNext.disabled for task tool", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   // Note: The `disabled` function checks if a TOOL should be completely removed from the tool list.
   // It only disables a tool when there's a rule with `pattern: "*"` and `action: "deny"`.
   // It does NOT evaluate complex subagent patterns - those are handled at runtime by `evaluate`.
@@ -139,6 +147,10 @@ describe("PermissionNext.disabled for task tool", () => {
 
 // Integration tests that load permissions from real config files
 describe("permission.task with real config files", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("loads task permissions from freecode.json config", async () => {
     await using tmp = await tmpdir({
       git: true,

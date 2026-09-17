@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import {  test, expect , afterAll } from "bun:test"
 import { Question } from "../../src/question"
 import { Instance } from "../../src/project/instance"
 import { QuestionID } from "../../src/question/schema"

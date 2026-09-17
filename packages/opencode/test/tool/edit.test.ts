@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import {  describe, test, expect , afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { EditTool } from "../../src/tool/edit"
@@ -19,7 +19,15 @@ const ctx = {
 }
 
 describe("tool.edit", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   describe("creating new files", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("creates new file when oldString is empty", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "newfile.txt")
@@ -103,6 +111,10 @@ describe("tool.edit", () => {
   })
 
   describe("editing existing files", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("replaces text in existing file", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "existing.txt")
@@ -324,6 +336,10 @@ describe("tool.edit", () => {
   })
 
   describe("edge cases", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("handles multiline replacements", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")
@@ -453,6 +469,10 @@ describe("tool.edit", () => {
   })
 
   describe("line endings", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     const old = "alpha\nbeta\ngamma"
     const next = "alpha\nbeta-updated\ngamma"
     const alt = "alpha\nbeta\nomega"
@@ -636,6 +656,10 @@ describe("tool.edit", () => {
   })
 
   describe("concurrent editing", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("serializes concurrent edits to same file", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")

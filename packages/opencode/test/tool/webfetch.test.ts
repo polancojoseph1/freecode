@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Instance } from "../../src/project/instance"
 import { WebFetchTool } from "../../src/tool/webfetch"
@@ -31,6 +31,10 @@ async function withFetch(
 }
 
 describe("tool.webfetch", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("returns image responses as file attachments", async () => {
     const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
     await withFetch(

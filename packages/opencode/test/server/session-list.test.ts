@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
@@ -8,6 +8,10 @@ const projectRoot = path.join(__dirname, "../..")
 Log.init({ print: false })
 
 describe("Session.list", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("filters by directory", async () => {
     await Instance.provide({
       directory: projectRoot,

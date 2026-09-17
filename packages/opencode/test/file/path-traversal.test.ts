@@ -1,4 +1,4 @@
-import { test, expect, describe } from "bun:test"
+import {  test, expect, describe , afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { Filesystem } from "../../src/util/filesystem"
@@ -7,6 +7,10 @@ import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
 describe("Filesystem.contains", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("allows paths within project", () => {
     expect(Filesystem.contains("/project", "/project/src")).toBe(true)
     expect(Filesystem.contains("/project", "/project/src/file.ts")).toBe(true)
@@ -41,6 +45,10 @@ describe("Filesystem.contains", () => {
  * This is a SEPARATE code path from ReadTool, which has its own checks.
  */
 describe("File.read path traversal protection", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("rejects ../ traversal attempting to read /etc/passwd", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -87,6 +95,10 @@ describe("File.read path traversal protection", () => {
 })
 
 describe("File.list path traversal protection", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("rejects ../ traversal attempting to list /etc", async () => {
     await using tmp = await tmpdir()
 
@@ -116,6 +128,10 @@ describe("File.list path traversal protection", () => {
 })
 
 describe("Instance.containsPath", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("returns true for path inside directory", async () => {
     await using tmp = await tmpdir({ git: true })
 

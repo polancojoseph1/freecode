@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { Session } from "../../src/session"
 import { SessionPrompt } from "../../src/session/prompt"
@@ -27,6 +27,10 @@ async function withInstance<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 describe("StructuredOutput Integration", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test.skipIf(!hasApiKey)(
     "produces structured output with simple schema",
     async () => {

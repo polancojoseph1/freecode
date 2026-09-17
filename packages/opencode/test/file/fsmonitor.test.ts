@@ -1,5 +1,5 @@
 import { $ } from "bun"
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import fs from "fs/promises"
 import path from "path"
 import { File } from "../../src/file"
@@ -9,6 +9,10 @@ import { tmpdir } from "../fixture/fixture"
 const wintest = process.platform === "win32" ? test : test.skip
 
 describe("file fsmonitor", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   wintest("status does not start fsmonitor for readonly git checks", async () => {
     await using tmp = await tmpdir({ git: true })
     const target = path.join(tmp.path, "tracked.txt")

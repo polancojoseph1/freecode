@@ -1,4 +1,4 @@
-import { test, expect, mock, beforeEach } from "bun:test"
+import {  test, expect, mock, beforeEach , afterAll } from "bun:test"
 
 // Mock UnauthorizedError to match the SDK's class
 class MockUnauthorizedError extends Error {

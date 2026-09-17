@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { SessionCompaction } from "../../src/session/compaction"
 import { Token } from "../../src/util/token"
@@ -41,6 +41,10 @@ function createModel(opts: {
 }
 
 describe("session.compaction.isOverflow", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("returns true when token count exceeds usable context", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
@@ -228,6 +232,10 @@ describe("session.compaction.isOverflow", () => {
 })
 
 describe("util.token.estimate", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("estimates tokens from text (4 chars per token)", () => {
     const text = "x".repeat(4000)
     expect(Token.estimate(text)).toBe(1000)
@@ -244,6 +252,10 @@ describe("util.token.estimate", () => {
 })
 
 describe("session.getUsage", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("normalizes standard usage to token format", () => {
     const model = createModel({ context: 100_000, output: 32_000 })
     const result = Session.getUsage({

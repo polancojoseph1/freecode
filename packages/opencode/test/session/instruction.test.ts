@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import {  afterEach, beforeEach, describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import { InstructionPrompt } from "../../src/session/instruction"
 import { Instance } from "../../src/project/instance"
@@ -6,6 +6,10 @@ import { Global } from "../../src/global"
 import { tmpdir } from "../fixture/fixture"
 
 describe("InstructionPrompt.resolve", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("returns empty when AGENTS.md is at project root (already in systemPaths)", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -71,6 +75,10 @@ describe("InstructionPrompt.resolve", () => {
 })
 
 describe("InstructionPrompt.systemPaths FREECODE_CONFIG_DIR", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   let originalConfigDir: string | undefined
 
   beforeEach(() => {

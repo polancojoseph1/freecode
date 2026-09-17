@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach } from "bun:test"
+import {  describe, expect, test, beforeEach, afterEach , afterAll } from "bun:test"
 import path from "path"
 import { Session } from "../../src/session"
 import { ModelID, ProviderID } from "../../src/provider/schema"
@@ -14,6 +14,10 @@ const projectRoot = path.join(__dirname, "../..")
 Log.init({ print: false })
 
 describe("revert + compact workflow", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("should properly handle compact command after revert", async () => {
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({

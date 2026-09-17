@@ -1,4 +1,4 @@
-import { test, expect, describe } from "bun:test"
+import {  test, expect, describe , afterAll } from "bun:test"
 import path from "path"
 import { unlink } from "fs/promises"
 
@@ -388,6 +388,10 @@ test("Bedrock: model without prefix in US region should get us. prefix added", a
 // These test the prefix detection logic used in getModel
 
 describe("Bedrock cross-region prefix detection", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   const crossRegionPrefixes = ["global.", "us.", "eu.", "jp.", "apac.", "au."]
 
   test("should detect global. prefix", () => {

@@ -16,6 +16,10 @@ import type { MessageV2 } from "../../src/session/message-v2"
 import { SessionID, MessageID } from "../../src/session/schema"
 
 describe("session.llm.hasToolCalls", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("returns false for empty messages array", () => {
     expect(LLM.hasToolCalls([])).toBe(false)
   })
@@ -224,6 +228,10 @@ function createEventResponse(chunks: unknown[], includeDone = false) {
 }
 
 describe("session.llm.stream", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("sends temperature, tokens, and reasoning options for openai-compatible models", async () => {
     const server = state.server
     if (!server) {

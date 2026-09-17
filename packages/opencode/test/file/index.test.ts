@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import {  describe, test, expect , afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { File } from "../../src/file"
@@ -7,7 +7,15 @@ import { Filesystem } from "../../src/util/filesystem"
 import { tmpdir } from "../fixture/fixture"
 
 describe("file/index Filesystem patterns", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   describe("File.read() - text content", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("reads text file via Filesystem.readText()", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "test.txt")
@@ -82,6 +90,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("File.read() - binary content", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("reads binary file via Filesystem.readArrayBuffer()", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "image.png")
@@ -117,6 +129,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("File.read() - Filesystem.mimeType()", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("detects MIME type via Filesystem.mimeType()", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "test.json")
@@ -157,6 +173,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("File.list() - Filesystem.exists() and readText()", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("reads .gitignore via Filesystem.exists() and readText()", async () => {
       await using tmp = await tmpdir({ git: true })
 
@@ -208,6 +228,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("File.changed() - Filesystem.readText() for untracked files", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("reads untracked files via Filesystem.readText()", async () => {
       await using tmp = await tmpdir({ git: true })
 
@@ -227,6 +251,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("Error handling", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("handles errors gracefully in Filesystem.readText()", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "readonly.txt")
@@ -277,6 +305,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("shouldEncode() logic", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("treats .ts files as text", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "test.ts")
@@ -369,6 +401,10 @@ describe("file/index Filesystem patterns", () => {
   })
 
   describe("Path security", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("throws for paths outside project directory", async () => {
       await using tmp = await tmpdir()
 

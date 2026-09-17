@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import {  describe, test, expect , afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { WriteTool } from "../../src/tool/write"
@@ -18,7 +18,15 @@ const ctx = {
 }
 
 describe("tool.write", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   describe("new file creation", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("writes content to new file", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "newfile.txt")
@@ -89,6 +97,10 @@ describe("tool.write", () => {
   })
 
   describe("existing file overwrite", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("overwrites existing file content", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "existing.txt")
@@ -148,6 +160,10 @@ describe("tool.write", () => {
   })
 
   describe("file permissions", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("sets file permissions when writing sensitive data", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "sensitive.json")
@@ -175,6 +191,10 @@ describe("tool.write", () => {
   })
 
   describe("content types", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("writes JSON content", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "data.json")
@@ -294,6 +314,10 @@ describe("tool.write", () => {
   })
 
   describe("error handling", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("throws error when OS denies write access", async () => {
       await using tmp = await tmpdir()
       const readonlyPath = path.join(tmp.path, "readonly.txt")
@@ -324,6 +348,10 @@ describe("tool.write", () => {
   })
 
   describe("title generation", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
     test("returns relative path as title", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "src", "components", "Button.tsx")

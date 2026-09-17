@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import path from "path"
 import * as fs from "fs/promises"
 import { ApplyPatchTool } from "../../src/tool/apply_patch"
@@ -59,6 +59,10 @@ const makeCtx = () => {
 }
 
 describe("tool.apply_patch freeform", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("requires patchText", async () => {
     const { ctx } = makeCtx()
     await expect(execute({ patchText: "" }, ctx)).rejects.toThrow("patchText is required")

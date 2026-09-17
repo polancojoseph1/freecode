@@ -1,9 +1,13 @@
-import { describe, expect, test } from "bun:test"
+import {  describe, expect, test , afterAll } from "bun:test"
 import { Scheduler } from "../src/scheduler"
 import { Instance } from "../src/project/instance"
 import { tmpdir } from "./fixture/fixture"
 
 describe("Scheduler.register", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   const hour = 60 * 60 * 1000
 
   test("defaults to instance scope per directory", async () => {
