@@ -1,15 +1,49 @@
+// ⚡ Bolt Optimization: Replace regex and split with manual backward iteration
+// for extreme path parsing performance on hot paths.
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === "/" || path[end] === "\\")) {
+    end--
+  }
+  if (end < 0) return "" // only slashes
+  let start = end
+  while (start >= 0 && path[start] !== "/" && path[start] !== "\\") {
+    start--
+  }
+  return path.slice(start + 1, end + 1)
 }
 
+// ⚡ Bolt Optimization: Replace regex and split with manual backward iteration
+// avoiding dense C-style manual iteration when string slicing is sufficient.
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === "/" || path[end] === "\\")) {
+    end--
+  }
+  if (end < 0) return "/" // only slashes -> root
+
+  let start = end
+  while (start >= 0 && path[start] !== "/" && path[start] !== "\\") {
+    start--
+  }
+  if (start < 0) return "/" // no slashes -> root
+
+  let hasBackslash = false
+  for (let i = 0; i < start; i++) {
+    if (path[i] === "\\") {
+      hasBackslash = true
+      break
+    }
+  }
+
+  if (!hasBackslash) {
+    return path.slice(0, start) + "/"
+  }
+
+  const dir = path.slice(0, start)
+  return dir.replace(/\\/g, "/") + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
