@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, timingSafeEqual } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -216,6 +217,8 @@ export default new Hono<{ Bindings: Env }>()
   })
   .post("/feishu", async (c) => {
     const body = (await c.req.json()) as {
+      token?: string
+      header?: { token?: string }
       challenge?: string
       event?: {
         message?: {
@@ -228,6 +231,19 @@ export default new Hono<{ Bindings: Env }>()
       }
     }
     console.log(JSON.stringify(body, null, 2))
+
+    // Authenticate webhook
+    const incomingToken = body.token || body.header?.token || ""
+    const expectedToken = Resource.FEISHU_VERIFICATION_TOKEN.value
+    const incomingBuffer = Buffer.from(incomingToken)
+    const expectedBuffer = Buffer.from(expectedToken)
+    if (
+      incomingBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(incomingBuffer, expectedBuffer)
+    ) {
+      return c.text("Unauthorized", { status: 401 })
+    }
+
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
 
