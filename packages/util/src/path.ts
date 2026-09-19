@@ -1,15 +1,38 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  // Optimized: use manual index scanning instead of regex and array allocation (.split)
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === "/" || path[end] === "\\")) {
+    end--
+  }
+  if (end < 0) return ""
+  let start = end
+  while (start >= 0 && path[start] !== "/" && path[start] !== "\\") {
+    start--
+  }
+  return path.slice(start + 1, end + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  // Optimized: use manual index scanning instead of regex and array allocation (.split)
+  let end = path.length - 1
+  while (end >= 0 && (path[end] === "/" || path[end] === "\\")) {
+    end--
+  }
+  if (end < 0) return "/"
+  let start = end
+  while (start >= 0 && path[start] !== "/" && path[start] !== "\\") {
+    start--
+  }
+  if (start < 0) return "/"
+
+  const dir = path.slice(0, start + 1)
+  if (dir.indexOf("\\") === -1) {
+    return dir[dir.length - 1] === "/" ? dir : dir + "/"
+  }
+  const replaced = dir.replaceAll("\\", "/")
+  return replaced[replaced.length - 1] === "/" ? replaced : replaced + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
