@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test"
+import { afterAll, describe, expect, mock, test } from "bun:test"
 import { Project } from "../../src/project/project"
 import { Log } from "../../src/util/log"
 import { $ } from "bun"
@@ -7,8 +7,13 @@ import { tmpdir } from "../fixture/fixture"
 import { Filesystem } from "../../src/util/filesystem"
 import { GlobalBus } from "../../src/bus/global"
 import { ProjectID } from "../../src/project/schema"
+import { Instance } from "../../src/project/instance"
 
 Log.init({ print: false })
+
+afterAll(async () => {
+  await Instance.disposeAll()
+})
 
 const gitModule = await import("../../src/util/git")
 const originalGit = gitModule.git
