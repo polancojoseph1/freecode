@@ -151,6 +151,10 @@ describe("tool.read external_directory permission", () => {
       },
     })
   })
+
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
 })
 
 describe("tool.read env file permissions", () => {
@@ -446,6 +450,10 @@ root_type Monster;`
       },
     })
   })
+
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
 })
 
 describe("tool.read loaded instructions", () => {
@@ -468,6 +476,10 @@ describe("tool.read loaded instructions", () => {
         expect(result.metadata.loaded).toContain(path.join(tmp.path, "subdir", "AGENTS.md"))
       },
     })
+  })
+
+  afterAll(async () => {
+    await Instance.disposeAll()
   })
 })
 
@@ -505,5 +517,9 @@ describe("tool.read binary detection", () => {
         )
       },
     })
+  })
+
+  afterAll(async () => {
+    await Instance.disposeAll()
   })
 })
