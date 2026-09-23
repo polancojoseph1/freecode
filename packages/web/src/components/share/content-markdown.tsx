@@ -37,7 +37,7 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const parsed = await markedWithShiki.parse(markdown); return (await import("./sanitize")).sanitize(parsed);
     },
   )
   const [expanded, setExpanded] = createSignal(false)

@@ -15,26 +15,28 @@ export function ContentBash(props: Props) {
   const [commandHtml] = createResource(
     () => props.command,
     async (command) => {
-      return codeToHtml(command || "", {
+      const parsed = await codeToHtml(command || "", {
         lang: "bash",
         themes: {
           light: "github-light",
           dark: "github-dark",
         },
-      })
+      });
+      return (await import("./sanitize")).sanitize(parsed);
     },
   )
 
   const [outputHtml] = createResource(
     () => props.output,
     async (output) => {
-      return codeToHtml(output || "", {
+      const parsed = await codeToHtml(output || "", {
         lang: "console",
         themes: {
           light: "github-light",
           dark: "github-dark",
         },
-      })
+      });
+      return (await import("./sanitize")).sanitize(parsed);
     },
   )
 
