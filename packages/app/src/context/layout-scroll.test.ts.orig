@@ -24,10 +24,10 @@ describe("createScrollPersistence", () => {
         scroll.setScroll("session", "review", { x: 0, y: i })
       }
 
-      vi.advanceTimersByTime(5)
+      vi.advanceTimersByTime(9)
       expect(writes).toHaveLength(0)
 
-      vi.advanceTimersByTime(10)
+      vi.advanceTimersByTime(1)
 
       expect(writes).toHaveLength(1)
       expect(writes[0]?.review).toEqual({ x: 0, y: 30 })
