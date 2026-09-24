@@ -1,4 +1,4 @@
-import { describe, test, expect, afterAll } from "bun:test"
+import { describe, test, expect, afterAll, afterEach } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { EditTool } from "../../src/tool/edit"
@@ -20,6 +20,10 @@ const ctx = {
 
 describe("tool.edit", () => {
   afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
+  afterEach(async () => {
     await Instance.disposeAll()
   })
 
