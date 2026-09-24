@@ -214,17 +214,16 @@ function buildCommand(args: string[], env: Record<string, string>) {
   if (process.platform === "win32" && isWslEnabled()) {
     console.log(`[cli] Using WSL mode`)
     const version = app.getVersion()
-    const escapedArgs = quote(args)
     const script = [
       "set -e",
       'BIN="$HOME/.opencode/bin/opencode"',
       'if [ ! -x "$BIN" ]; then',
       `  curl -fsSL https://opencode.ai/install | bash -s -- --version ${shellEscape(version)} --no-modify-path`,
       "fi",
-      `${envPrefix(env)} exec "$BIN" ${escapedArgs}`,
+      `${envPrefix(env)} exec "$BIN" "$@"`,
     ].join("\n")
 
-    return { cmd: "wsl", cmdArgs: ["-e", "bash", "-lc", script] }
+    return { cmd: "wsl", cmdArgs: ["-e", "bash", "-lc", script, "--", ...args] }
   }
 
   if (process.platform === "win32") {
@@ -235,11 +234,14 @@ function buildCommand(args: string[], env: Record<string, string>) {
 
   const sidecar = getSidecarPath()
   const shell = process.env.SHELL || "/bin/sh"
-  const escapedArgs = quote(args)
-  const escapedSidecar = quote([sidecar])
-  const line = shell.endsWith("/nu") ? `^${escapedSidecar} ${escapedArgs}` : `${escapedSidecar} ${escapedArgs}`
-  console.log(`[cli] Unix mode, shell: ${shell}, command: ${line}`)
-  return { cmd: shell, cmdArgs: ["-l", "-c", line] }
+
+  if (shell.endsWith("/nu")) {
+    console.log(`[cli] Unix mode (nu), sidecar: ${sidecar}`)
+    return { cmd: sidecar, cmdArgs: args }
+  }
+
+  console.log(`[cli] Unix mode, shell: ${shell}, sidecar: ${sidecar}`)
+  return { cmd: shell, cmdArgs: ["-l", "-c", 'exec "$@"', "--", sidecar, ...args] }
 }
 
 function envPrefix(env: Record<string, string>) {
