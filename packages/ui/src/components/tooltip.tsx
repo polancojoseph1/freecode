@@ -1,7 +1,6 @@
 import { Tooltip as KobalteTooltip } from "@kobalte/core/tooltip"
-import { createEffect, Match, onCleanup, splitProps, Switch, type JSX } from "solid-js"
+import { createEffect, createSignal, Match, onCleanup, splitProps, Switch, type JSX } from "solid-js"
 import type { ComponentProps } from "solid-js"
-import { createStore } from "solid-js/store"
 
 export interface TooltipProps extends ComponentProps<typeof KobalteTooltip> {
   value: JSX.Element
@@ -34,11 +33,11 @@ export function TooltipKeybind(props: TooltipKeybindProps) {
 
 export function Tooltip(props: TooltipProps) {
   let ref: HTMLDivElement | undefined
-  const [state, setState] = createStore({
-    open: false,
-    block: false,
-    expand: false,
-  })
+  // ⚡ Bolt Optimization: Using createSignal instead of createStore for simple primitives
+  const [open, setOpen] = createSignal(false)
+  const [block, setBlock] = createSignal(false)
+  const [expand, setExpand] = createSignal(false)
+
   const [local, others] = splitProps(props, [
     "children",
     "class",
@@ -50,7 +49,7 @@ export function Tooltip(props: TooltipProps) {
     "value",
   ])
 
-  const close = () => setState("open", false)
+  const close = () => setOpen(false)
 
   const inside = () => {
     const active = document.activeElement
@@ -58,26 +57,26 @@ export function Tooltip(props: TooltipProps) {
     return ref.contains(active)
   }
 
-  const drop = (expand = state.expand) => {
-    if (expand) return
+  const drop = (isExpanded = expand()) => {
+    if (isExpanded) return
     if (ref?.matches(":hover")) return
     if (inside()) return
-    setState("block", false)
+    setBlock(false)
   }
 
   const sync = () => {
-    const expand = !!ref?.querySelector('[aria-expanded="true"], [data-expanded]')
-    setState("expand", expand)
-    if (expand) {
-      setState("block", true)
+    const isExpanded = !!ref?.querySelector('[aria-expanded="true"], [data-expanded]')
+    setExpand(isExpanded)
+    if (isExpanded) {
+      setBlock(true)
       close()
       return
     }
-    drop(expand)
+    drop(isExpanded)
   }
 
   const arm = () => {
-    setState("block", true)
+    setBlock(true)
     close()
   }
 
@@ -108,11 +107,11 @@ export function Tooltip(props: TooltipProps) {
           {...others}
           closeDelay={0}
           ignoreSafeArea={local.ignoreSafeArea ?? true}
-          open={local.forceOpen || state.open}
-          onOpenChange={(open) => {
+          open={local.forceOpen || open()}
+          onOpenChange={(isOpen) => {
             if (local.forceOpen) return
-            if (state.block && open) return
-            setState("open", open)
+            if (block() && isOpen) return
+            setOpen(isOpen)
           }}
         >
           <KobalteTooltip.Trigger
