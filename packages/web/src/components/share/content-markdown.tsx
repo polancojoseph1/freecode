@@ -5,6 +5,7 @@ import { createOverflow, useShareMessages } from "./common"
 import { CopyButton } from "./copy-button"
 import { createResource, createSignal } from "solid-js"
 import style from "./content-markdown.module.css"
+import { sanitize } from "./sanitize"
 
 const markedWithShiki = marked.use(
   {
@@ -37,7 +38,8 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const raw = await markedWithShiki.parse(markdown)
+      return sanitize(raw)
     },
   )
   const [expanded, setExpanded] = createSignal(false)

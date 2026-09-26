@@ -1,6 +1,7 @@
 import { codeToHtml, bundledLanguages } from "shiki"
 import { createResource, Suspense } from "solid-js"
 import style from "./content-code.module.css"
+import { sanitize } from "./sanitize"
 
 interface Props {
   code: string
@@ -11,13 +12,14 @@ export function ContentCode(props: Props) {
   const [html] = createResource(
     () => [props.code, props.lang],
     async ([code, lang]) => {
-      return (await codeToHtml(code || "", {
+      const rawHtml = await codeToHtml(code || "", {
         lang: lang && lang in bundledLanguages ? lang : "text",
         themes: {
           light: "github-light",
           dark: "github-dark",
         },
-      })) as string
+      })
+      return sanitize(rawHtml as string)
     },
   )
   return (
