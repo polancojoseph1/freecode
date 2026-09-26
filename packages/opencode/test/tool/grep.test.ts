@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import { GrepTool } from "../../src/tool/grep"
 import { Instance } from "../../src/project/instance"
@@ -108,4 +108,9 @@ describe("CRLF regex handling", () => {
     const lines = mixedOutput.trim().split(/\r?\n/)
     expect(lines.length).toBe(3)
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })

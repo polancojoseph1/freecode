@@ -687,3 +687,8 @@ test("defaultAgent throws when all primary agents are disabled", async () => {
     },
   })
 })
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
+})

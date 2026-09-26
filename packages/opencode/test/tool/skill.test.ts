@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import { pathToFileURL } from "url"
 import type { PermissionNext } from "../../src/permission/next"
@@ -110,4 +110,9 @@ Use this skill.
       process.env.FREECODE_TEST_HOME = home
     }
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })

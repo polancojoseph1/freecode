@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import type { Tool } from "../../src/tool/tool"
 import { Instance } from "../../src/project/instance"
@@ -125,4 +125,9 @@ describe("tool.assertExternalDirectory", () => {
 
     expect(requests.length).toBe(0)
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import os from "os"
 import path from "path"
 import { ShellTool } from "../../src/tool/shell"
@@ -400,4 +400,9 @@ describe("tool.bash truncation", () => {
       },
     })
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })
