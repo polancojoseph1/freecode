@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import { describe, test, expect, afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { EditTool } from "../../src/tool/edit"
@@ -677,4 +677,9 @@ describe("tool.edit", () => {
       })
     })
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })

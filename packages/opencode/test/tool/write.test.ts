@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import { describe, test, expect, afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { WriteTool } from "../../src/tool/write"
@@ -346,4 +346,9 @@ describe("tool.write", () => {
       })
     })
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })

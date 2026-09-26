@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import * as fs from "fs/promises"
 import { ApplyPatchTool } from "../../src/tool/apply_patch"
@@ -564,4 +564,9 @@ EOF`
       },
     })
   })
+})
+
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })
