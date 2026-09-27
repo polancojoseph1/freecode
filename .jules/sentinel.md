@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2025-05-25 - XSS Vulnerability in SSR Component innerHTML
+**Vulnerability:** Found XSS vulnerability where user-controlled markdown and code snippets were rendered raw via `innerHTML={html()}` without server-side safe sanitization in SolidJS components.
+**Learning:** Using `innerHTML` with `marked` or `shiki` outputs introduces severe XSS risks in universal apps. Standard `dompurify` lacks immediate SSR compatibility unless explicitly polyfilled or provided a window.
+**Prevention:** Use `isomorphic-dompurify` directly wrapping the outputs to assure universal HTML sanitization that is active server-side.
