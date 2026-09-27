@@ -27,6 +27,9 @@ afterAll(async () => {
   // Windows can keep SQLite WAL handles alive until GC finalizers run, so we
   // force GC and retry teardown to avoid flaky EBUSY in test cleanup.
   await rm(30)
+
+  const { Instance } = await import("../src/instance/instance")
+  await Instance.disposeAll()
 })
 
 process.env["XDG_DATA_HOME"] = path.join(dir, "share")
