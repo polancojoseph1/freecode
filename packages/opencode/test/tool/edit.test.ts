@@ -238,7 +238,7 @@ describe("tool.edit", () => {
           FileTime.read(ctx.sessionID, filepath)
 
           // Wait a bit to ensure different timestamps
-          await new Promise((resolve) => setTimeout(resolve, 100))
+          await new Promise((resolve) => setTimeout(resolve, 1000))
 
           // Simulate external modification
           await fs.writeFile(filepath, "modified externally", "utf-8")

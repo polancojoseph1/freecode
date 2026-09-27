@@ -28,3 +28,7 @@
 **Vulnerability:** Found XSS vulnerability where user-controlled markdown and code snippets were rendered raw via `innerHTML={html()}` without server-side safe sanitization in SolidJS components.
 **Learning:** Using `innerHTML` with `marked` or `shiki` outputs introduces severe XSS risks in universal apps. Standard `dompurify` lacks immediate SSR compatibility unless explicitly polyfilled or provided a window.
 **Prevention:** Use `isomorphic-dompurify` directly wrapping the outputs to assure universal HTML sanitization that is active server-side.
+## 2025-05-25 - Flaky EBUSY Error on SQLite Teardown
+**Vulnerability:** Not a security vulnerability but a test stability issue in GitHub CI runners, causing timeouts with exit code 143.
+**Learning:** `packages/opencode/test/preload.ts` was not disposing instances cleanly with `Instance.disposeAll()`. It only ran a manual `rm` directory retry loop to try and defeat Windows WAL locks. However, tests that used `Instance.provide(...)` without explicitly releasing it would leak background processes (like SQLite connections or `fsmonitor` daemons) across the test runner, eventually filling up the event loop and causing the test runner to stall or timeout.
+**Prevention:** Always make sure `Instance.disposeAll()` is called within a global `afterAll` hook or similar teardown mechanism in test environments utilizing the Instance framework.
