@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import { GrepTool } from "../../src/tool/grep"
 import { Instance } from "../../src/project/instance"
@@ -19,6 +19,10 @@ const ctx = {
 const projectRoot = path.join(__dirname, "../..")
 
 describe("tool.grep", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("basic search", async () => {
     await Instance.provide({
       directory: projectRoot,
