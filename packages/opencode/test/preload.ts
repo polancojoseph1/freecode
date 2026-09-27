@@ -28,7 +28,7 @@ afterAll(async () => {
   // force GC and retry teardown to avoid flaky EBUSY in test cleanup.
   await rm(30)
 
-  const { Instance } = await import("../src/instance/instance")
+  const { Instance } = await import("../src/project/instance")
   await Instance.disposeAll()
 })
 
