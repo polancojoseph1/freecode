@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, timingSafeEqual } from "node:crypto"
+import { Buffer } from "node:buffer"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -215,18 +216,40 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
+    let body
+    try {
+      body = (await c.req.json()) as {
+        challenge?: string
+        token?: string
+        header?: { token?: string }
+        event?: {
+          message?: {
+            message_id?: string
+            root_id?: string
+            parent_id?: string
+            chat_id?: string
+            content?: string
+          }
         }
       }
+    } catch {
+      return c.json({ error: "Invalid JSON" }, { status: 400 })
     }
+
+    const token = body?.token || body?.header?.token
+    if (!token) return c.json({ error: "Unauthorized" }, { status: 401 })
+
+    const tokenBuf = Buffer.from(token)
+    const secretBuf = Buffer.from(Resource.FEISHU_VERIFICATION_TOKEN.value)
+
+    if (tokenBuf.byteLength !== secretBuf.byteLength) {
+      return c.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (!timingSafeEqual(tokenBuf, secretBuf)) {
+      return c.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
