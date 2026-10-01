@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2024-05-18 - Missing Authentication in Webhook Endpoint
+**Vulnerability:** The `/feishu` webhook endpoint lacked token verification, exposing the API to unauthorized requests.
+**Learning:** Even internal endpoints or webhooks that merely post messages (e.g. to Discord) can be abused for spam, spoofing, or denial-of-service if they do not validate incoming payload signatures or tokens. The fix must cover all payload structures from the provider (e.g., v1 versus v2 payload locations).
+**Prevention:** Always require and validate cryptographic signatures or secure tokens against a trusted secret (`sst.Secret`) for all incoming webhooks before processing the payload. Ensure token/signature checks happen before any application logic executes.

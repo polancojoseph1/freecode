@@ -216,6 +216,8 @@ export default new Hono<{ Bindings: Env }>()
   })
   .post("/feishu", async (c) => {
     const body = (await c.req.json()) as {
+      token?: string
+      header?: { token?: string }
       challenge?: string
       event?: {
         message?: {
@@ -228,6 +230,12 @@ export default new Hono<{ Bindings: Env }>()
       }
     }
     console.log(JSON.stringify(body, null, 2))
+
+    // Authenticate the request using Feishu Verification Token
+    if (body.token !== Resource.FEISHU_VERIFICATION_TOKEN.value && body.header?.token !== Resource.FEISHU_VERIFICATION_TOKEN.value) {
+      return c.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
 
