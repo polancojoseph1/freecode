@@ -232,7 +232,10 @@ export default new Hono<{ Bindings: Env }>()
     console.log(JSON.stringify(body, null, 2))
 
     // Authenticate the request using Feishu Verification Token
-    if (body.token !== Resource.FEISHU_VERIFICATION_TOKEN.value && body.header?.token !== Resource.FEISHU_VERIFICATION_TOKEN.value) {
+    if (
+      body.token !== Resource.FEISHU_VERIFICATION_TOKEN.value &&
+      body.header?.token !== Resource.FEISHU_VERIFICATION_TOKEN.value
+    ) {
       return c.json({ error: "Unauthorized" }, { status: 401 })
     }
 
