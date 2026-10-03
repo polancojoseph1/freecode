@@ -9,7 +9,6 @@ import { Config } from "../config/config"
 import { Instance } from "../project/instance"
 import { Scheduler } from "../scheduler"
 import { Process } from "@/util/process"
-import { work } from "../util/queue"
 
 export namespace Snapshot {
   const log = Log.create({ service: "snapshot" })
@@ -298,7 +297,7 @@ export namespace Snapshot {
       status.set(file, kind)
     }
 
-    const lines = await Process.lines(
+    for (const line of await Process.lines(
       [
         "git",
         "-c",
@@ -315,18 +314,13 @@ export namespace Snapshot {
         cwd: Instance.directory,
         nothrow: true,
       },
-    )
-
-    const mappedLines = lines.map((line, index) => ({ line, index }))
-
-    await work(10, mappedLines, async ({ line, index }) => {
-      if (!line) return
+    )) {
+      if (!line) continue
       const [additions, deletions, file] = line.split("\t")
       const isBinaryFile = additions === "-" && deletions === "-"
-
-      const beforePromise = isBinaryFile
-        ? Promise.resolve("")
-        : Process.text(
+      const before = isBinaryFile
+        ? ""
+        : await Process.text(
             [
               "git",
               "-c",
@@ -339,10 +333,9 @@ export namespace Snapshot {
             ],
             { nothrow: true },
           ).then((x) => x.text)
-
-      const afterPromise = isBinaryFile
-        ? Promise.resolve("")
-        : Process.text(
+      const after = isBinaryFile
+        ? ""
+        : await Process.text(
             [
               "git",
               "-c",
@@ -355,23 +348,18 @@ export namespace Snapshot {
             ],
             { nothrow: true },
           ).then((x) => x.text)
-
-      const [before, after] = await Promise.all([beforePromise, afterPromise])
-
       const added = isBinaryFile ? 0 : parseInt(additions)
       const deleted = isBinaryFile ? 0 : parseInt(deletions)
-
-      result[index] = {
+      result.push({
         file,
         before,
         after,
         additions: Number.isFinite(added) ? added : 0,
         deletions: Number.isFinite(deleted) ? deleted : 0,
         status: status.get(file) ?? "modified",
-      }
-    })
-
-    return result.filter(Boolean)
+      })
+    }
+    return result
   }
 
   function gitdir() {

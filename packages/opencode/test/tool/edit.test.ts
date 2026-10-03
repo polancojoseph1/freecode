@@ -1,3 +1,5 @@
+import { afterAll } from "bun:test"
+
 import { describe, test, expect } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
@@ -19,6 +21,10 @@ const ctx = {
 }
 
 describe("tool.edit", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   describe("creating new files", () => {
     test("creates new file when oldString is empty", async () => {
       await using tmp = await tmpdir()
