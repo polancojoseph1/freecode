@@ -3,8 +3,13 @@ import { Instance } from "../../src/project/instance"
 import { Pty } from "../../src/pty"
 import { tmpdir } from "../fixture/fixture"
 import { setTimeout as sleep } from "node:timers/promises"
+import { afterAll } from "bun:test"
 
 describe("pty", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("does not leak output when websocket objects are reused", async () => {
     await using dir = await tmpdir({ git: true })
 

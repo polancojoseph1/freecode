@@ -5,6 +5,7 @@ import { Pty } from "../../src/pty"
 import type { PtyID } from "../../src/pty/schema"
 import { tmpdir } from "../fixture/fixture"
 import { setTimeout as sleep } from "node:timers/promises"
+import { afterAll } from "bun:test"
 
 const wait = async (fn: () => boolean, ms = 2000) => {
   const end = Date.now() + ms
@@ -20,6 +21,10 @@ const pick = (log: Array<{ type: "created" | "exited" | "deleted"; id: PtyID }>,
 }
 
 describe("pty", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("publishes created, exited, deleted in order for /bin/ls + remove", async () => {
     if (process.platform === "win32") return
 
