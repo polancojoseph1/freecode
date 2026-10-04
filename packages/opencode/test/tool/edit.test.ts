@@ -4,6 +4,7 @@ import fs from "fs/promises"
 import { EditTool } from "../../src/tool/edit"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
+import { afterAll } from "bun:test"
 import { FileTime } from "../../src/file/time"
 import { SessionID, MessageID } from "../../src/session/schema"
 
@@ -19,6 +20,10 @@ const ctx = {
 }
 
 describe("tool.edit", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   describe("creating new files", () => {
     test("creates new file when oldString is empty", async () => {
       await using tmp = await tmpdir()
