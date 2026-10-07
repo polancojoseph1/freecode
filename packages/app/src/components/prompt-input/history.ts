@@ -73,7 +73,18 @@ export function normalizePromptHistoryEntry(entry: PromptHistoryStoredEntry): Pr
 }
 
 export function promptLength(prompt: Prompt) {
-  return prompt.reduce((len, part) => len + ("content" in part ? part.content.length : 0), 0)
+  // ⚡ Bolt Performance Optimization:
+  // Replaced `prompt.reduce` with a standard `for` loop to eliminate per-element closure allocation.
+  // This function is evaluated on every keystroke (`promptLength`), and native `for` loops
+  // avoid the GC overhead associated with higher-order array methods in hot paths.
+  let len = 0
+  for (let i = 0; i < prompt.length; i++) {
+    const part = prompt[i]
+    if ("content" in part) {
+      len += part.content.length
+    }
+  }
+  return len
 }
 
 export function prependHistoryEntry(
