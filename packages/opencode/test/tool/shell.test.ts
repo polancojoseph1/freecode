@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { afterAll } from "bun:test"
 import os from "os"
 import path from "path"
 import { ShellTool } from "../../src/tool/shell"
@@ -23,6 +24,9 @@ const ctx = {
 const projectRoot = path.join(__dirname, "../..")
 
 describe("tool.bash", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
   test("basic", async () => {
     await Instance.provide({
       directory: projectRoot,

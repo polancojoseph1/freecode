@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { afterAll } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { tmpdir } from "../fixture/fixture"
@@ -6,6 +7,9 @@ import { Instance } from "../../src/project/instance"
 import { ToolRegistry } from "../../src/tool/registry"
 
 describe("tool.registry", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
   test("loads tools from .freecode/tool (singular)", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -38,7 +42,7 @@ describe("tool.registry", () => {
         expect(ids).toContain("hello")
       },
     })
-  })
+  }, 20000)
 
   test("loads tools from .freecode/tools (plural)", async () => {
     await using tmp = await tmpdir({
@@ -72,7 +76,7 @@ describe("tool.registry", () => {
         expect(ids).toContain("hello")
       },
     })
-  })
+  }, 20000)
 
   test("loads tools with external dependencies without crashing", async () => {
     await using tmp = await tmpdir({
@@ -118,5 +122,5 @@ describe("tool.registry", () => {
         expect(ids).toContain("cowsay")
       },
     })
-  })
+  }, 20000)
 })

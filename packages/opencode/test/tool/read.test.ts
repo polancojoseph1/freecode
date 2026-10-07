@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { afterAll } from "bun:test"
 import path from "path"
 import { ReadTool } from "../../src/tool/read"
 import { Instance } from "../../src/project/instance"
@@ -22,6 +23,9 @@ const ctx = {
 }
 
 describe("tool.read external_directory permission", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
   test("allows reading absolute path inside project directory", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {

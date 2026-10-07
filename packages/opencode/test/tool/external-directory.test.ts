@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { afterAll } from "bun:test"
 import path from "path"
 import type { Tool } from "../../src/tool/tool"
 import { Instance } from "../../src/project/instance"
@@ -17,6 +18,9 @@ const baseCtx: Omit<Tool.Context, "ask"> = {
 }
 
 describe("tool.assertExternalDirectory", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
   test("no-ops for empty target", async () => {
     const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
     const ctx: Tool.Context = {
