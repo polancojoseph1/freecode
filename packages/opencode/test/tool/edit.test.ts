@@ -6,6 +6,11 @@ import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 import { FileTime } from "../../src/file/time"
 import { SessionID, MessageID } from "../../src/session/schema"
+import { afterAll } from "bun:test"
+
+afterAll(async () => {
+  await Instance.disposeAll()
+})
 
 const ctx = {
   sessionID: SessionID.make("ses_test-edit-session"),
