@@ -215,29 +215,32 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ info, messages })
   })
   .post("/feishu", async (c) => {
-    const body = (await c.req.json()) as {
-      challenge?: string
-      event?: {
-        message?: {
-          message_id?: string
-          root_id?: string
-          parent_id?: string
-          chat_id?: string
-          content?: string
-        }
-      }
+    let body: any
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.text("Bad Request", { status: 400 })
     }
+
+    const token = body.token || body.header?.token
+    if (!token || token !== Resource.FEISHU_VERIFICATION_TOKEN.value) {
+      return c.text("Forbidden", { status: 403 })
+    }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
 
     const content = body.event?.message?.content
-    const parsed =
-      typeof content === "string" && content.trim().startsWith("{")
-        ? (JSON.parse(content) as {
-            text?: string
-          })
-        : undefined
+    let parsed: { text?: string } | undefined
+    if (typeof content === "string" && content.trim().startsWith("{")) {
+      try {
+        parsed = JSON.parse(content)
+      } catch {
+        parsed = undefined
+      }
+    }
+
     const text = typeof parsed?.text === "string" ? parsed.text : typeof content === "string" ? content : ""
 
     let message = text.trim().replace(/^@_user_\d+\s*/, "")
