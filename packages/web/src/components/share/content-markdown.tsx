@@ -1,10 +1,34 @@
 import { marked } from "marked"
 import { codeToHtml } from "shiki"
 import markedShiki from "marked-shiki"
+import sanitizeHtml from "sanitize-html"
 import { createOverflow, useShareMessages } from "./common"
 import { CopyButton } from "./copy-button"
 import { createResource, createSignal } from "solid-js"
 import style from "./content-markdown.module.css"
+
+const sanitizeConfig = {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat(["span", "pre", "code", "img"]),
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    span: ["class", "style"],
+    pre: ["class", "style", "tabindex"],
+    code: ["class", "style"],
+    img: ["src", "alt", "title", "class", "style"],
+  },
+  allowedStyles: {
+    "*": {
+      "color": [/.*/],
+      "background-color": [/.*/],
+      "font-style": [/.*/],
+      "font-weight": [/.*/],
+      "--shiki-dark": [/.*/],
+      "--shiki-dark-bg": [/.*/],
+      "--shiki-light": [/.*/],
+      "--shiki-light-bg": [/.*/],
+    },
+  },
+}
 
 const markedWithShiki = marked.use(
   {
@@ -37,7 +61,8 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const parsed = await markedWithShiki.parse(markdown)
+      return sanitizeHtml(parsed, sanitizeConfig)
     },
   )
   const [expanded, setExpanded] = createSignal(false)
