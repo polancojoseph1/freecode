@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## $(date +%Y-%m-%d) - Command injection in wsl_path in Rust backend
+**Vulnerability:** Shell command injection via unsanitized user input in `wsl -e sh -lc "wslpath..."` in `packages/desktop/src-tauri/src/lib.rs`.
+**Learning:** Similar to JavaScript APIs, interpolating untrusted paths into a shell command string (`sh -c <string>`) leaves the command vulnerable to shell metacharacters in Rust's `Command::new()`.
+**Prevention:** Pass variables as discrete arguments to `sh` using `--` and refer to them inside the shell string with `$1`, `$2`, etc.
