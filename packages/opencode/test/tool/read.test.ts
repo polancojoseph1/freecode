@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, test, expect, afterAll } from "bun:test"
 import path from "path"
 import { ReadTool } from "../../src/tool/read"
 import { Instance } from "../../src/project/instance"
@@ -502,4 +502,8 @@ describe("tool.read binary detection", () => {
       },
     })
   })
+})
+
+afterAll(async () => {
+  await Instance.disposeAll()
 })
