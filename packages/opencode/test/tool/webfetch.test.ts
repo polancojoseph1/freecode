@@ -99,3 +99,8 @@ describe("tool.webfetch", () => {
     )
   })
 })
+
+import { afterAll } from "bun:test"
+afterAll(async () => {
+  await Instance.disposeAll()
+})

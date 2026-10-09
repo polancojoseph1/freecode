@@ -347,3 +347,8 @@ describe("tool.write", () => {
     })
   })
 })
+
+import { afterAll } from "bun:test"
+afterAll(async () => {
+  await Instance.disposeAll()
+})

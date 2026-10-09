@@ -158,3 +158,8 @@ describe("Truncate", () => {
     })
   })
 })
+
+import { Instance } from "../../src/project/instance"
+afterAll(async () => {
+  await Instance.disposeAll()
+})
