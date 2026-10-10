@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## $(date +%Y-%m-%d) - Unauthenticated Webhooks
+**Vulnerability:** The `/feishu` webhook endpoint in `packages/function/src/api.ts` lacked authentication.
+**Learning:** Cloudflare Workers endpoints receiving webhooks must explicitly verify the payload against a shared secret to prevent unauthenticated spoofing. When doing so with `timingSafeEqual`, one must first verify that `byteLength` matches to prevent uncaught exceptions that could cause DoS.
+**Prevention:** Always authenticate webhook endpoints using headers or payload tokens with constant-time equality checks and length validation.
