@@ -18,7 +18,13 @@ const ctx = {
   ask: async () => {},
 }
 
+import { afterAll } from "bun:test"
+
 describe("tool.edit", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   describe("creating new files", () => {
     test("creates new file when oldString is empty", async () => {
       await using tmp = await tmpdir()
