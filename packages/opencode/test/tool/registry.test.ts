@@ -5,7 +5,13 @@ import { tmpdir } from "../fixture/fixture"
 import { Instance } from "../../src/project/instance"
 import { ToolRegistry } from "../../src/tool/registry"
 
+import { afterAll } from "bun:test"
+
 describe("tool.registry", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("loads tools from .freecode/tool (singular)", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {

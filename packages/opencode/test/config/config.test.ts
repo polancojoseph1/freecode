@@ -15,6 +15,10 @@ import { BunProc } from "../../src/bun"
 // Get managed config directory from environment (set in preload.ts)
 const managedConfigDir = process.env.FREECODE_TEST_MANAGED_CONFIG_DIR!
 
+import { afterAll } from "bun:test"
+afterAll(async () => {
+  await Instance.disposeAll()
+})
 afterEach(async () => {
   await fs.rm(managedConfigDir, { force: true, recursive: true }).catch(() => {})
 })
