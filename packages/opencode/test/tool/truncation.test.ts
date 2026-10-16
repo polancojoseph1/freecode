@@ -8,6 +8,11 @@ import path from "path"
 const FIXTURES_DIR = path.join(import.meta.dir, "fixtures")
 
 describe("Truncate", () => {
+  afterAll(async () => {
+    const { Instance } = await import("../../src/project/instance");
+    await Instance.disposeAll()
+  })
+
   describe("output", () => {
     test("truncates large json file by bytes", async () => {
       const content = await Filesystem.readText(path.join(FIXTURES_DIR, "models-api.json"))

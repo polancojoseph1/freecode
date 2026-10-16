@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, afterAll } from "bun:test"
 import path from "path"
 import { ReadTool } from "../../src/tool/read"
 import { Instance } from "../../src/project/instance"
@@ -22,6 +22,10 @@ const ctx = {
 }
 
 describe("tool.read external_directory permission", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("allows reading absolute path inside project directory", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -154,6 +158,10 @@ describe("tool.read external_directory permission", () => {
 })
 
 describe("tool.read env file permissions", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   const cases: [string, boolean][] = [
     [".env", true],
     [".env.local", true],
@@ -198,6 +206,10 @@ describe("tool.read env file permissions", () => {
 })
 
 describe("tool.read truncation", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("truncates large file by bytes and sets truncated metadata", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -445,6 +457,10 @@ root_type Monster;`
 })
 
 describe("tool.read loaded instructions", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("loads AGENTS.md from parent directory and includes in metadata", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
@@ -468,6 +484,10 @@ describe("tool.read loaded instructions", () => {
 })
 
 describe("tool.read binary detection", () => {
+  afterAll(async () => {
+    await Instance.disposeAll()
+  })
+
   test("rejects text extension files with null bytes", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
