@@ -5,6 +5,7 @@ import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
 import { Resource } from "sst"
+import { timingSafeEqual } from "node:crypto"
 
 type Env = {
   SYNC_SERVER: DurableObjectNamespace<SyncServer>
@@ -216,6 +217,8 @@ export default new Hono<{ Bindings: Env }>()
   })
   .post("/feishu", async (c) => {
     const body = (await c.req.json()) as {
+      token?: string
+      header?: { token?: string }
       challenge?: string
       event?: {
         message?: {
@@ -227,17 +230,27 @@ export default new Hono<{ Bindings: Env }>()
         }
       }
     }
+
+    // Authenticate webhook
+    const tokenStr = body.token || body.header?.token || ""
+    const encoder = new TextEncoder()
+    const providedToken = encoder.encode(tokenStr)
+    const expectedToken = encoder.encode(Resource.FEISHU_VERIFICATION_TOKEN.value)
+    if (providedToken.byteLength !== expectedToken.byteLength || !timingSafeEqual(providedToken, expectedToken)) {
+      return c.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     console.log(JSON.stringify(body, null, 2))
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
 
     const content = body.event?.message?.content
-    const parsed =
-      typeof content === "string" && content.trim().startsWith("{")
-        ? (JSON.parse(content) as {
-            text?: string
-          })
-        : undefined
+    let parsed
+    try {
+      parsed = typeof content === "string" && content.trim().startsWith("{") ? JSON.parse(content) : undefined
+    } catch {
+      parsed = undefined
+    }
     const text = typeof parsed?.text === "string" ? parsed.text : typeof content === "string" ? content : ""
 
     let message = text.trim().replace(/^@_user_\d+\s*/, "")
