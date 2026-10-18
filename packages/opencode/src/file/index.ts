@@ -356,19 +356,24 @@ export namespace File {
           .readdir(Instance.directory, { withFileTypes: true })
           .catch(() => [] as fs.Dirent[])
 
-        for (const entry of top) {
-          if (!entry.isDirectory()) continue
-          if (shouldIgnore(entry.name)) continue
-          dirs.add(entry.name + "/")
+        // ⚡ Bolt Optimization: Load all subdirectories concurrently instead of sequentially
+        // This eliminates an N+1 synchronous read bottleneck and significantly improves
+        // startup time in large repositories.
+        await Promise.all(
+          top.map(async (entry) => {
+            if (!entry.isDirectory()) return
+            if (shouldIgnore(entry.name)) return
+            dirs.add(entry.name + "/")
 
-          const base = path.join(Instance.directory, entry.name)
-          const children = await fs.promises.readdir(base, { withFileTypes: true }).catch(() => [] as fs.Dirent[])
-          for (const child of children) {
-            if (!child.isDirectory()) continue
-            if (shouldIgnoreNested(child.name)) continue
-            dirs.add(entry.name + "/" + child.name + "/")
-          }
-        }
+            const base = path.join(Instance.directory, entry.name)
+            const children = await fs.promises.readdir(base, { withFileTypes: true }).catch(() => [] as fs.Dirent[])
+            for (const child of children) {
+              if (!child.isDirectory()) continue
+              if (shouldIgnoreNested(child.name)) continue
+              dirs.add(entry.name + "/" + child.name + "/")
+            }
+          }),
+        )
 
         result.dirs = Array.from(dirs).toSorted()
         cache = result

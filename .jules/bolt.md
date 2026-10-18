@@ -39,3 +39,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Prioritize native Buffer APIs for string/byte conversions in Bun/Node environments
 **Learning:** In the Bun/Node environments, `Array.from` for byte mapping (e.g. `Array.from(bytes, (b) => String.fromCharCode(b)).join("")` and `Uint8Array.from(binary, (c) => c.charCodeAt(0))`) performs extremely poorly on large data. `Buffer.from(value).toString('base64url')` is roughly 6-10x faster for base64 encoding and `Buffer.from(value, 'base64').toString('utf-8')` is 30x faster for decoding.
 **Action:** When implementing or refactoring functions like `base64Encode`, `base64Decode`, and `hash` in environments where `Buffer` is available (e.g. Node.js or Bun), prefer using the native `Buffer` API for performance. Fallback to optimized browser loops (chunked or direct indexing) when `Buffer` is missing.
+
+## 2023-10-27 - Concurrent Markdown Reading in Global Home Scanner
+**Learning:** Sequential `readdir` calls inside a `for...of` loop can create an N+1 performance bottleneck when scanning directories. In `File.state()`, this sequential iteration slowed down scanning in `isGlobalHome`.
+**Action:** Replace `for (const x of arr)` with `await Promise.all(arr.map(async (x) => ...))` when executing filesystem I/O sequentially.
