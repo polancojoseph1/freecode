@@ -43,3 +43,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2023-10-27 - Concurrent Markdown Reading in Global Home Scanner
 **Learning:** Sequential `readdir` calls inside a `for...of` loop can create an N+1 performance bottleneck when scanning directories. In `File.state()`, this sequential iteration slowed down scanning in `isGlobalHome`.
 **Action:** Replace `for (const x of arr)` with `await Promise.all(arr.map(async (x) => ...))` when executing filesystem I/O sequentially.
+
+## 2023-10-27 - Ignored Flaky Tests
+**Learning:** The `@opencode-ai/app` package has a flaky test: `createScrollPersistence > debounces persisted scroll writes` which can safely be ignored during monorepo testing if unrelated to the current changes.
+**Action:** Ignore `createScrollPersistence` flakiness when running `turbo run test`.
