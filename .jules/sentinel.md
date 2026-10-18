@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## $(date +%Y-%m-%d) - Feishu Webhook Authentication Bypass
+**Vulnerability:** The `/feishu` webhook endpoint in `packages/function/src/api.ts` lacked authentication. Any external request could hit this endpoint and trigger the bot.
+**Learning:** Feishu sends verification tokens differently based on the webhook version. They can be in the body root (`body.token`) or nested in the header (`body.header.token`). Furthermore, standard node string comparison `===` is vulnerable to timing attacks.
+**Prevention:** Always authenticate webhook endpoints by verifying the provided token against a securely stored SST secret (e.g. `FEISHU_VERIFICATION_TOKEN`). Use `timingSafeEqual` with `node:crypto` after ensuring both `Uint8Array`s have the exact same length to prevent timing attacks and buffer mismatch errors.

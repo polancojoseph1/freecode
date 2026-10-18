@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, timingSafeEqual } from "node:crypto"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -216,6 +216,10 @@ export default new Hono<{ Bindings: Env }>()
   })
   .post("/feishu", async (c) => {
     const body = (await c.req.json()) as {
+      token?: string
+      header?: {
+        token?: string
+      }
       challenge?: string
       event?: {
         message?: {
@@ -228,6 +232,18 @@ export default new Hono<{ Bindings: Env }>()
       }
     }
     console.log(JSON.stringify(body, null, 2))
+
+    const token = body.token || body.header?.token
+    if (!token) return c.json({ error: "Missing token" }, { status: 401 })
+
+    const encoder = new TextEncoder()
+    const receivedToken = encoder.encode(token)
+    const expectedToken = encoder.encode(Resource.FEISHU_VERIFICATION_TOKEN.value)
+
+    if (receivedToken.byteLength !== expectedToken.byteLength || !timingSafeEqual(receivedToken, expectedToken)) {
+      return c.json({ error: "Invalid token" }, { status: 401 })
+    }
+
     const challenge = body.challenge
     if (challenge) return c.json({ challenge })
 
