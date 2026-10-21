@@ -2,6 +2,7 @@ import style from "./content-bash.module.css"
 import { createResource, createSignal } from "solid-js"
 import { createOverflow, useShareMessages } from "./common"
 import { codeToHtml } from "shiki"
+import sanitizeHtml from "sanitize-html"
 
 interface Props {
   command: string
@@ -10,31 +11,58 @@ interface Props {
   expand?: boolean
 }
 
+function sanitize(html: string) {
+  return sanitizeHtml(html, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["span", "pre", "code", "img"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      pre: ["class", "style", "tabindex"],
+      code: ["class", "style", "dir"],
+      span: ["class", "style", "line"],
+      img: ["src", "alt", "title"],
+    },
+    allowedStyles: {
+      "*": {
+        color: [/.*/],
+        "background-color": [/.*/],
+        "font-style": [/.*/],
+        "font-weight": [/.*/],
+        "--shiki-dark": [/.*/],
+        "--shiki-dark-bg": [/.*/],
+      },
+    },
+  })
+}
+
 export function ContentBash(props: Props) {
   const messages = useShareMessages()
   const [commandHtml] = createResource(
     () => props.command,
     async (command) => {
-      return codeToHtml(command || "", {
-        lang: "bash",
-        themes: {
-          light: "github-light",
-          dark: "github-dark",
-        },
-      })
+      return sanitize(
+        await codeToHtml(command || "", {
+          lang: "bash",
+          themes: {
+            light: "github-light",
+            dark: "github-dark",
+          },
+        }),
+      )
     },
   )
 
   const [outputHtml] = createResource(
     () => props.output,
     async (output) => {
-      return codeToHtml(output || "", {
-        lang: "console",
-        themes: {
-          light: "github-light",
-          dark: "github-dark",
-        },
-      })
+      return sanitize(
+        await codeToHtml(output || "", {
+          lang: "console",
+          themes: {
+            light: "github-light",
+            dark: "github-dark",
+          },
+        }),
+      )
     },
   )
 
