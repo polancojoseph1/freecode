@@ -42,3 +42,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-24 - [Cloudflare Workers R2 Bucket Batch Deletion]
 **Learning:** Calling `Bucket.delete(key)` inside a sequential `for...of` loop in a Cloudflare Worker introduces an `N+1` I/O overhead bottleneck and can quickly exhaust Cloudflare's subrequest limits (crashing the worker if it exceeds ~50 subrequests).
 **Action:** The `@cloudflare/workers-types` R2 `delete` method natively supports passing an array of strings. For bulk deletions, always map keys into an array and execute a single batch deletion (`await env.Bucket.delete(keys)`).
+
+## 2025-03-24 - [Test Hanging in CI - Missing Teardown]
+**Learning:** Tests using `Instance.provide(...)` (like in `packages/opencode/test/...`) can cause the GitHub Actions runner to hang and timeout with exit code 143 (runner shutdown signal) due to missing teardown.
+**Action:** Ensure `await Instance.disposeAll()` is called within an `afterAll()` block to clean up background handles (like fsmonitor or open database connections) and allow the event loop to exit cleanly, even if the test times out or fails. Ensure the hook is declared as `async` and verify that `Instance` is properly imported.

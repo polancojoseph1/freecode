@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "bun:test"
+import { describe, expect, test, beforeEach, afterAll } from "bun:test"
 import path from "path"
 import { LSPClient } from "../../src/lsp/client"
 import { LSPServer } from "../../src/lsp/server"
@@ -19,6 +19,10 @@ function spawnFakeServer() {
 describe("LSPClient interop", () => {
   beforeEach(async () => {
     await Log.init({ print: true })
+  })
+
+  afterAll(async () => {
+    await Instance.disposeAll()
   })
 
   test("handles workspace/workspaceFolders request", async () => {
