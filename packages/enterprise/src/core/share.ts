@@ -1,7 +1,16 @@
 import { FileDiff, Message, Model, Part, Session } from "@opencode-ai/sdk/v2"
+import { timingSafeEqual } from "node:crypto"
 import { fn } from "@opencode-ai/util/fn"
 import { iife } from "@opencode-ai/util/iife"
 import z from "zod"
+
+function safeCompare(a: string, b: string): boolean {
+  const enc = new TextEncoder()
+  const aBuf = enc.encode(a)
+  const bBuf = enc.encode(b)
+  if (aBuf.byteLength !== bBuf.byteLength) return false
+  return timingSafeEqual(aBuf, bBuf)
+}
 import { Storage } from "./storage"
 
 export namespace Share {
@@ -131,7 +140,7 @@ export namespace Share {
   export const remove = fn(Info.pick({ id: true, secret: true }), async (body) => {
     const share = await get(body.id)
     if (!share) throw new Errors.NotFound(body.id)
-    if (share.secret !== body.secret) throw new Errors.InvalidSecret(body.id)
+    if (!safeCompare(share.secret, body.secret)) throw new Errors.InvalidSecret(body.id)
     await Storage.remove(["share", body.id])
     const groups = await Promise.all([
       Storage.list({ prefix: ["share_snapshot", body.id] }),
@@ -152,7 +161,7 @@ export namespace Share {
     async (input) => {
       const share = await get(input.share.id)
       if (!share) throw new Errors.NotFound(input.share.id)
-      if (share.secret !== input.share.secret) throw new Errors.InvalidSecret(input.share.id)
+      if (!safeCompare(share.secret, input.share.secret)) throw new Errors.InvalidSecret(input.share.id)
       const data = (await readSnapshot(input.share.id)) ?? (await legacy(input.share.id))
       await writeSnapshot(input.share.id, merge(data, input.data))
     },
@@ -170,7 +179,7 @@ export namespace Share {
     async (input) => {
       const share = await get(input.share.id)
       if (!share) throw new Errors.NotFound(input.share.id)
-      if (share.secret !== input.share.secret) throw new Errors.InvalidSecret(input.share.id)
+      if (!safeCompare(share.secret, input.share.secret)) throw new Errors.InvalidSecret(input.share.id)
       const promises = []
       for (const item of input.data) {
         promises.push(
