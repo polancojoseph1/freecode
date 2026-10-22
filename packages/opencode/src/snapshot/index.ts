@@ -9,6 +9,7 @@ import { Config } from "../config/config"
 import { Instance } from "../project/instance"
 import { Scheduler } from "../scheduler"
 import { Process } from "@/util/process"
+import { work } from "../util/queue"
 
 export namespace Snapshot {
   const log = Log.create({ service: "snapshot" })
@@ -297,7 +298,7 @@ export namespace Snapshot {
       status.set(file, kind)
     }
 
-    for (const line of await Process.lines(
+    const diffOutput = await Process.text(
       [
         "git",
         "-c",
@@ -314,52 +315,63 @@ export namespace Snapshot {
         cwd: Instance.directory,
         nothrow: true,
       },
-    )) {
-      if (!line) continue
+    ).then(x => x.text)
+
+    const lines = diffOutput.trim().split("\n").map((line, index) => ({ line, index }))
+
+    // ⚡ Bolt: Concurrent processing of git show commands using bounded concurrency
+    await work(10, lines, async ({ line, index }) => {
+      if (!line) return
       const [additions, deletions, file] = line.split("\t")
       const isBinaryFile = additions === "-" && deletions === "-"
-      const before = isBinaryFile
-        ? ""
-        : await Process.text(
-            [
-              "git",
-              "-c",
-              "core.autocrlf=false",
-              "-c",
-              "core.longpaths=true",
-              "-c",
-              "core.symlinks=true",
-              ...args(git, ["show", `${from}:${file}`]),
-            ],
-            { nothrow: true },
-          ).then((x) => x.text)
-      const after = isBinaryFile
-        ? ""
-        : await Process.text(
-            [
-              "git",
-              "-c",
-              "core.autocrlf=false",
-              "-c",
-              "core.longpaths=true",
-              "-c",
-              "core.symlinks=true",
-              ...args(git, ["show", `${to}:${file}`]),
-            ],
-            { nothrow: true },
-          ).then((x) => x.text)
+
+      const [before, after] = await Promise.all([
+        isBinaryFile
+          ? Promise.resolve("")
+          : Process.text(
+              [
+                "git",
+                "-c",
+                "core.autocrlf=false",
+                "-c",
+                "core.longpaths=true",
+                "-c",
+                "core.symlinks=true",
+                ...args(git, ["show", `${from}:${file}`]),
+              ],
+              { nothrow: true },
+            ).then((x) => x.text),
+        isBinaryFile
+          ? Promise.resolve("")
+          : Process.text(
+              [
+                "git",
+                "-c",
+                "core.autocrlf=false",
+                "-c",
+                "core.longpaths=true",
+                "-c",
+                "core.symlinks=true",
+                ...args(git, ["show", `${to}:${file}`]),
+              ],
+              { nothrow: true },
+            ).then((x) => x.text)
+      ])
+
       const added = isBinaryFile ? 0 : parseInt(additions)
       const deleted = isBinaryFile ? 0 : parseInt(deletions)
-      result.push({
+
+      result[index] = {
         file,
         before,
         after,
         additions: Number.isFinite(added) ? added : 0,
         deletions: Number.isFinite(deleted) ? deleted : 0,
         status: status.get(file) ?? "modified",
-      })
-    }
-    return result
+      }
+    })
+
+    return result.filter(Boolean)
   }
 
   function gitdir() {

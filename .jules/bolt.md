@@ -39,3 +39,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Prioritize native Buffer APIs for string/byte conversions in Bun/Node environments
 **Learning:** In the Bun/Node environments, `Array.from` for byte mapping (e.g. `Array.from(bytes, (b) => String.fromCharCode(b)).join("")` and `Uint8Array.from(binary, (c) => c.charCodeAt(0))`) performs extremely poorly on large data. `Buffer.from(value).toString('base64url')` is roughly 6-10x faster for base64 encoding and `Buffer.from(value, 'base64').toString('utf-8')` is 30x faster for decoding.
 **Action:** When implementing or refactoring functions like `base64Encode`, `base64Decode`, and `hash` in environments where `Buffer` is available (e.g. Node.js or Bun), prefer using the native `Buffer` API for performance. Fallback to optimized browser loops (chunked or direct indexing) when `Buffer` is missing.
+
+## 2025-03-24 - [Bounded Concurrency for Git Operations]
+**Learning:** Sequential `await` calls inside `for...of` loops reading git output (`git show`) introduce significant N+1 synchronous bottlenecks. Unbounded `Promise.all` can trigger `EMFILE` errors.
+**Action:** Use a bounded concurrency utility like `work` from `packages/opencode/src/util/queue.ts` along with `Promise.all` for inner fetches to process heavy shell commands efficiently. Map the array to include indices (`{line, index}`) to safely assign results in order (`result[index] = ...`) instead of `.push()`, avoiding race conditions.
