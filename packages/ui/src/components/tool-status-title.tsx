@@ -1,5 +1,4 @@
-import { Show, createEffect, createMemo, on, onCleanup, onMount } from "solid-js"
-import { createStore } from "solid-js/store"
+import { Show, createEffect, createMemo, on, onCleanup, onMount, createSignal } from "solid-js"
 import { TextShimmer } from "./text-shimmer"
 
 function common(active: string, done: string) {
@@ -36,12 +35,8 @@ export function ToolStatusTitle(props: {
   const activeTail = createMemo(() => (suffix() ? split().active : props.activeText))
   const doneTail = createMemo(() => (suffix() ? split().done : props.doneText))
 
-  const [state, setState] = createStore({
-    width: "auto",
-    ready: false,
-  })
-  const width = () => state.width
-  const ready = () => state.ready
+  const [width, setWidth] = createSignal("auto")
+  const [ready, setReady] = createSignal(false)
   let activeRef: HTMLSpanElement | undefined
   let doneRef: HTMLSpanElement | undefined
   let frame: number | undefined
@@ -50,7 +45,7 @@ export function ToolStatusTitle(props: {
   const measure = () => {
     const target = props.active ? activeRef : doneRef
     const px = contentWidth(target)
-    if (px > 0) setState("width", `${px}px`)
+    if (px > 0) setWidth(`${px}px`)
   }
 
   const schedule = () => {
@@ -67,13 +62,13 @@ export function ToolStatusTitle(props: {
 
   const finish = () => {
     if (typeof requestAnimationFrame !== "function") {
-      setState("ready", true)
+      setReady(true)
       return
     }
     if (readyFrame !== undefined) cancelAnimationFrame(readyFrame)
     readyFrame = requestAnimationFrame(() => {
       readyFrame = undefined
-      setState("ready", true)
+      setReady(true)
     })
   }
 

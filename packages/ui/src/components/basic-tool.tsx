@@ -1,7 +1,6 @@
-import { createEffect, For, Match, on, onCleanup, Show, Switch, type JSX } from "solid-js"
+import { createEffect, For, Match, on, onCleanup, Show, Switch, type JSX, createSignal } from "solid-js"
 import { animate, type AnimationPlaybackControls } from "motion"
 import { useI18n } from "../context/i18n"
-import { createStore } from "solid-js/store"
 import { Collapsible } from "./collapsible"
 import type { IconProps } from "./icon"
 import { TextShimmer } from "./text-shimmer"
@@ -39,12 +38,8 @@ export interface BasicToolProps {
 const SPRING = { type: "spring" as const, visualDuration: 0.35, bounce: 0 }
 
 export function BasicTool(props: BasicToolProps) {
-  const [state, setState] = createStore({
-    open: props.defaultOpen ?? false,
-    ready: props.defaultOpen ?? false,
-  })
-  const open = () => state.open
-  const ready = () => state.ready
+  const [open, setOpen] = createSignal(props.defaultOpen ?? false)
+  const [ready, setReady] = createSignal(props.defaultOpen ?? false)
   const pending = () => props.status === "pending" || props.status === "running"
 
   let frame: number | undefined
@@ -58,7 +53,7 @@ export function BasicTool(props: BasicToolProps) {
   onCleanup(cancel)
 
   createEffect(() => {
-    if (props.forceOpen) setState("open", true)
+    if (props.forceOpen) setOpen(true)
   })
 
   createEffect(
@@ -68,7 +63,7 @@ export function BasicTool(props: BasicToolProps) {
         if (!props.defer) return
         if (!value) {
           cancel()
-          setState("ready", false)
+          setReady(false)
           return
         }
 
@@ -76,7 +71,7 @@ export function BasicTool(props: BasicToolProps) {
         frame = requestAnimationFrame(() => {
           frame = undefined
           if (!open()) return
-          setState("ready", true)
+          setReady(true)
         })
       },
       { defer: true },
@@ -118,7 +113,7 @@ export function BasicTool(props: BasicToolProps) {
   const handleOpenChange = (value: boolean) => {
     if (pending()) return
     if (props.locked && !value) return
-    setState("open", value)
+    setOpen(value)
   }
 
   return (

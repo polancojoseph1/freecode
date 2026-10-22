@@ -1,5 +1,4 @@
-import { type ComponentProps, createMemo, Show, splitProps } from "solid-js"
-import { createStore } from "solid-js/store"
+import { type ComponentProps, createMemo, Show, splitProps, createSignal } from "solid-js"
 import { Card, CardDescription } from "./card"
 import { Collapsible } from "./collapsible"
 import { Icon } from "./icon"
@@ -17,12 +16,8 @@ export interface ToolErrorCardProps extends Omit<ComponentProps<typeof Card>, "c
 
 export function ToolErrorCard(props: ToolErrorCardProps) {
   const i18n = useI18n()
-  const [state, setState] = createStore({
-    open: props.defaultOpen ?? false,
-    copied: false,
-  })
-  const open = () => state.open
-  const copied = () => state.copied
+  const [open, setOpen] = createSignal(props.defaultOpen ?? false)
+  const [copied, setCopied] = createSignal(false)
   const [split, rest] = splitProps(props, ["tool", "error", "defaultOpen", "subtitle", "href"])
   const name = createMemo(() => {
     const map: Record<string, string> = {
@@ -70,8 +65,8 @@ export function ToolErrorCard(props: ToolErrorCardProps) {
     const text = cleaned()
     if (!text) return
     await navigator.clipboard.writeText(text)
-    setState("copied", true)
-    setTimeout(() => setState("copied", false), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -80,7 +75,7 @@ export function ToolErrorCard(props: ToolErrorCardProps) {
         class="tool-collapsible"
         data-open={open() ? "true" : "false"}
         open={open()}
-        onOpenChange={(value) => setState("open", value)}
+        onOpenChange={(value) => setOpen(value)}
       >
         <Collapsible.Trigger>
           <div data-component="tool-trigger">
