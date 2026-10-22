@@ -73,10 +73,11 @@ export namespace Storage {
           })
 
           log.info(`migrating sessions for project ${projectID}`)
-          for (const sessionFile of await Glob.scan("storage/session/info/*.json", {
+          const sessionFiles = await Glob.scan("storage/session/info/*.json", {
             cwd: fullProjectDir,
             absolute: true,
-          })) {
+          })
+          await work(10, sessionFiles, async (sessionFile) => {
             const dest = path.join(dir, "session", projectID, path.basename(sessionFile))
             log.info("copying", {
               sessionFile,
@@ -85,10 +86,11 @@ export namespace Storage {
             const session = await Filesystem.readJson<any>(sessionFile)
             await Filesystem.writeJson(dest, session)
             log.info(`migrating messages for session ${session.id}`)
-            for (const msgFile of await Glob.scan(`storage/session/message/${session.id}/*.json`, {
+            const msgFiles = await Glob.scan(`storage/session/message/${session.id}/*.json`, {
               cwd: fullProjectDir,
               absolute: true,
-            })) {
+            })
+            for (const msgFile of msgFiles) {
               const dest = path.join(dir, "message", session.id, path.basename(msgFile))
               log.info("copying", {
                 msgFile,
@@ -102,7 +104,7 @@ export namespace Storage {
                 cwd: fullProjectDir,
                 absolute: true,
               })
-              await Promise.all(partFiles.map(async (partFile) => {
+              for (const partFile of partFiles) {
                 const dest = path.join(dir, "part", message.id, path.basename(partFile))
                 const part = await Filesystem.readJson(partFile)
                 log.info("copying", {
@@ -110,9 +112,9 @@ export namespace Storage {
                   dest,
                 })
                 await Filesystem.writeJson(dest, part)
-              }))
+              }
             }
-          }
+          })
         }
       }
     },
