@@ -5,6 +5,7 @@ import { createOverflow, useShareMessages } from "./common"
 import { CopyButton } from "./copy-button"
 import { createResource, createSignal } from "solid-js"
 import style from "./content-markdown.module.css"
+import sanitizeHtml from "sanitize-html"
 
 const markedWithShiki = marked.use(
   {
@@ -37,7 +38,26 @@ export function ContentMarkdown(props: Props) {
   const [html] = createResource(
     () => strip(props.text),
     async (markdown) => {
-      return markedWithShiki.parse(markdown)
+      const parsed = await markedWithShiki.parse(markdown)
+      return sanitizeHtml(parsed, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "span"]),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          span: ["class", "style"],
+          pre: ["class", "style", "tabindex"],
+          code: ["class", "style"],
+          img: ["src", "alt", "class", "style"]
+        },
+        allowedStyles: {
+          "*": {
+            color: [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
+            "background-color": [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
+            "font-style": [/^normal$/, /^italic$/, /^oblique$/],
+            "font-weight": [/^[1-9]00$/, /^normal$/, /^bold$/, /^bolder$/, /^lighter$/],
+            "text-decoration": [/^none$/, /^underline$/, /^overline$/, /^line-through$/]
+          }
+        }
+      })
     },
   )
   const [expanded, setExpanded] = createSignal(false)
