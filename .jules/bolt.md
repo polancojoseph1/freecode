@@ -39,3 +39,11 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-08 - Prioritize native Buffer APIs for string/byte conversions in Bun/Node environments
 **Learning:** In the Bun/Node environments, `Array.from` for byte mapping (e.g. `Array.from(bytes, (b) => String.fromCharCode(b)).join("")` and `Uint8Array.from(binary, (c) => c.charCodeAt(0))`) performs extremely poorly on large data. `Buffer.from(value).toString('base64url')` is roughly 6-10x faster for base64 encoding and `Buffer.from(value, 'base64').toString('utf-8')` is 30x faster for decoding.
 **Action:** When implementing or refactoring functions like `base64Encode`, `base64Decode`, and `hash` in environments where `Buffer` is available (e.g. Node.js or Bun), prefer using the native `Buffer` API for performance. Fallback to optimized browser loops (chunked or direct indexing) when `Buffer` is missing.
+
+## 2025-03-24 - [Automated Review Hallucinations on Imports]
+**Learning:** Automated code reviewers may incorrectly flag pre-existing imports as missing (e.g., throwing a `ReferenceError` hallucination) if the import line was not explicitly included in your patch diff.
+**Action:** If you verify the import already exists in the file (e.g., using `grep`), you should trust the successful output of `bun x turbo run typecheck` over the reviewer's error.
+
+## 2025-03-24 - [Avoid Local Package Installations]
+**Learning:** Running `bun install` inside individual monorepo sub-packages (e.g., `packages/sdk/js`) can inadvertently rewrite the workspace-level `bun.lock` file and trigger out-of-scope code generation (like SDK `.gen.ts` files).
+**Action:** Avoid running `bun install` locally. If dependencies must be verified, run monorepo-wide checks from the root.
