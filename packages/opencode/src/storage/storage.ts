@@ -73,10 +73,15 @@ export namespace Storage {
           })
 
           log.info(`migrating sessions for project ${projectID}`)
-          for (const sessionFile of await Glob.scan("storage/session/info/*.json", {
+          const sessionFiles = await Glob.scan("storage/session/info/*.json", {
             cwd: fullProjectDir,
             absolute: true,
-          })) {
+          })
+
+          // ⚡ Bolt Optimization: Replaced sequential `for...of` loops with concurrent processing
+          // using the `work` utility to process 50 sessions and their messages concurrently.
+          // This eliminates N+1 synchronous read blocking, accelerating migration for large projects.
+          await work(50, sessionFiles, async (sessionFile) => {
             const dest = path.join(dir, "session", projectID, path.basename(sessionFile))
             log.info("copying", {
               sessionFile,
@@ -84,35 +89,38 @@ export namespace Storage {
             })
             const session = await Filesystem.readJson<any>(sessionFile)
             await Filesystem.writeJson(dest, session)
-            log.info(`migrating messages for session ${session.id}`)
-            for (const msgFile of await Glob.scan(`storage/session/message/${session.id}/*.json`, {
+
+            const msgFiles = await Glob.scan(`storage/session/message/${session.id}/*.json`, {
               cwd: fullProjectDir,
               absolute: true,
-            })) {
-              const dest = path.join(dir, "message", session.id, path.basename(msgFile))
+            })
+
+            // Reverted Promise.all to sequential to avoid EMFILE due to high concurrency
+            // limits inside an already concurrent loop.
+            for (const msgFile of msgFiles) {
+              const destMsg = path.join(dir, "message", session.id, path.basename(msgFile))
               log.info("copying", {
                 msgFile,
-                dest,
+                dest: destMsg,
               })
               const message = await Filesystem.readJson<any>(msgFile)
-              await Filesystem.writeJson(dest, message)
+              await Filesystem.writeJson(destMsg, message)
 
-              log.info(`migrating parts for message ${message.id}`)
               const partFiles = await Glob.scan(`storage/session/part/${session.id}/${message.id}/*.json`, {
                 cwd: fullProjectDir,
                 absolute: true,
               })
               await Promise.all(partFiles.map(async (partFile) => {
-                const dest = path.join(dir, "part", message.id, path.basename(partFile))
+                const destPart = path.join(dir, "part", message.id, path.basename(partFile))
                 const part = await Filesystem.readJson(partFile)
                 log.info("copying", {
                   partFile,
-                  dest,
+                  dest: destPart,
                 })
-                await Filesystem.writeJson(dest, part)
+                await Filesystem.writeJson(destPart, part)
               }))
             }
-          }
+          })
         }
       }
     },
