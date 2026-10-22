@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2026-05-19 - [Fix Unprotected JSON.parse]
+**Vulnerability:** Found unprotected `JSON.parse` calls in Cloudflare worker endpoints and log processors (`packages/function/src/api.ts` and `packages/console/function/src/log-processor.ts`).
+**Learning:** Cloudflare Workers and background event processors can crash or leak unhandled exceptions if `JSON.parse` encounters malformed payloads (e.g. from external webhooks or structured log text).
+**Prevention:** Always wrap `JSON.parse` in a `try...catch` block to handle malformed strings gracefully and prevent denial-of-service or unhandled exception leaks.

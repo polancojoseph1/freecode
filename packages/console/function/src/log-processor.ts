@@ -39,10 +39,14 @@ export default {
       for (const log of event.logs) {
         for (const message of log.message) {
           if (!message.startsWith("_metric:")) continue
-          const json = JSON.parse(message.slice(8))
-          data = { ...data, ...json }
-          if ("llm.error.code" in json) {
-            events.push({ time, data: { ...data, event_type: "llm.error" } })
+          try {
+            const json = JSON.parse(message.slice(8))
+            data = { ...data, ...json }
+            if ("llm.error.code" in json) {
+              events.push({ time, data: { ...data, event_type: "llm.error" } })
+            }
+          } catch (e) {
+            // ignore malformed log metric
           }
         }
       }

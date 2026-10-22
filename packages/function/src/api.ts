@@ -232,12 +232,14 @@ export default new Hono<{ Bindings: Env }>()
     if (challenge) return c.json({ challenge })
 
     const content = body.event?.message?.content
-    const parsed =
-      typeof content === "string" && content.trim().startsWith("{")
-        ? (JSON.parse(content) as {
-            text?: string
-          })
-        : undefined
+    let parsed: { text?: string } | undefined
+    if (typeof content === "string" && content.trim().startsWith("{")) {
+      try {
+        parsed = JSON.parse(content)
+      } catch (e) {
+        parsed = undefined
+      }
+    }
     const text = typeof parsed?.text === "string" ? parsed.text : typeof content === "string" ? content : ""
 
     let message = text.trim().replace(/^@_user_\d+\s*/, "")
