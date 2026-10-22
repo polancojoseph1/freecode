@@ -143,6 +143,12 @@ export function registerIpcHandlers(deps: Deps) {
 
     const resolvedApp = (await deps.resolveAppPath(app)) || app
 
+    // Prevent execution of batch files via execFile on Windows to avoid command injection
+    const ext = resolvedApp.split(/[/\\]/).pop()?.toLowerCase() ?? ""
+    if (ext.endsWith(".bat") || ext.endsWith(".cmd")) {
+      throw new Error("Batch files are not allowed due to command injection risks")
+    }
+
     await new Promise<void>((resolve, reject) => {
       const [cmd, args] =
         process.platform === "darwin" ? (["open", ["-a", resolvedApp, path]] as const) : ([resolvedApp, [path]] as const)
