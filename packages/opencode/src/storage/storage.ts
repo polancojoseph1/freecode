@@ -73,10 +73,15 @@ export namespace Storage {
           })
 
           log.info(`migrating sessions for project ${projectID}`)
-          for (const sessionFile of await Glob.scan("storage/session/info/*.json", {
+          const sessionFiles = await Glob.scan("storage/session/info/*.json", {
             cwd: fullProjectDir,
             absolute: true,
-          })) {
+          })
+          // ⚡ Bolt Performance Optimization:
+          // Refactored sequential `for...of` loops over `Glob.scan` results with concurrent chunked processing using `work(50)`.
+          // Grouping independent I/O writes within the same iteration eliminates the N+1 read/write bottleneck,
+          // drastically reducing storage migration times for large numbers of sessions.
+          await work(50, sessionFiles, async (sessionFile) => {
             const dest = path.join(dir, "session", projectID, path.basename(sessionFile))
             log.info("copying", {
               sessionFile,
@@ -85,10 +90,12 @@ export namespace Storage {
             const session = await Filesystem.readJson<any>(sessionFile)
             await Filesystem.writeJson(dest, session)
             log.info(`migrating messages for session ${session.id}`)
-            for (const msgFile of await Glob.scan(`storage/session/message/${session.id}/*.json`, {
+
+            const msgFiles = await Glob.scan(`storage/session/message/${session.id}/*.json`, {
               cwd: fullProjectDir,
               absolute: true,
-            })) {
+            })
+            await work(50, msgFiles, async (msgFile) => {
               const dest = path.join(dir, "message", session.id, path.basename(msgFile))
               log.info("copying", {
                 msgFile,
@@ -111,8 +118,8 @@ export namespace Storage {
                 })
                 await Filesystem.writeJson(dest, part)
               }))
-            }
-          }
+            })
+          })
         }
       }
     },
