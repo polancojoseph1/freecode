@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { DurableObject } from "cloudflare:workers"
-import { randomUUID } from "node:crypto"
+import { randomUUID, timingSafeEqual } from "node:crypto"
 import { jwtVerify, createRemoteJWKSet } from "jose"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
@@ -97,7 +97,12 @@ export class SyncServer extends DurableObject<Env> {
   }
 
   public async assertSecret(secret: string) {
-    if (secret !== (await this.getSecret())) throw new Error("Invalid secret")
+    const expected = await this.getSecret()
+    if (!expected) throw new Error("Invalid secret")
+
+    const a = new TextEncoder().encode(secret)
+    const b = new TextEncoder().encode(expected)
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("Invalid secret")
   }
 
   private async getSecret() {
@@ -154,7 +159,14 @@ export default new Hono<{ Bindings: Env }>()
     const body = await c.req.json<{ sessionShortName: string; adminSecret: string }>()
     const sessionShortName = body.sessionShortName
     const adminSecret = body.adminSecret
-    if (adminSecret !== Resource.ADMIN_SECRET.value) throw new Error("Invalid admin secret")
+
+    const expected = Resource.ADMIN_SECRET.value
+    if (!expected) throw new Error("Invalid admin secret")
+
+    const a = new TextEncoder().encode(adminSecret)
+    const b = new TextEncoder().encode(expected)
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("Invalid admin secret")
+
     const id = c.env.SYNC_SERVER.idFromName(sessionShortName)
     const stub = c.env.SYNC_SERVER.get(id)
     await stub.clear()
