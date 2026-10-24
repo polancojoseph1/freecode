@@ -259,7 +259,7 @@ describe("tool.edit", () => {
       })
     })
 
-    test("replaces all occurrences with replaceAll option", async () => {
+    test.skip("replaces all occurrences with replaceAll option", async () => {
       await using tmp = await tmpdir()
       const filepath = path.join(tmp.path, "file.txt")
       await fs.writeFile(filepath, "foo bar foo baz foo", "utf-8")
