@@ -24,3 +24,12 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2026-10-24 - Prevent Unsafe URL Schemes in shell.openExternal
+**Vulnerability:** The Electron `ipcMain` handler for `open-link` directly passed unsanitized user-provided URLs to `shell.openExternal()`. This allows an attacker to open arbitrary local files or execute commands using schemes like `file://` or `smb://`.
+**Learning:** In Electron, `shell.openExternal` is dangerous when used with untrusted input because it hands off the URL to the OS's default handler, which can execute local programs or scripts if a malicious protocol is provided.
+**Prevention:** Always validate and allowlist URL protocols (e.g., `http:`, `https:`, `mailto:`) using the `URL` constructor before passing them to `shell.openExternal()`.
+
+## 2026-10-24 - Prevent Command Injection in Windows ExecFile via Batch Files
+**Vulnerability:** The `open-path` IPC handler allowed `.bat` and `.cmd` applications to be executed via `execFile` on Windows. Since Node.js implicitly spawns `cmd.exe` to execute these extensions on Windows, this allows implicit command injection even when arguments are passed as an array.
+**Learning:** The existing blocklist (`sh`, `bash`, `cmd`, `powershell`) was insufficient because it only blocked explicit shell interpreters. Attackers could bypass it by providing a malicious batch script path as the 'app', forcing implicit `cmd.exe` evaluation.
+**Prevention:** Explicitly block `.bat` and `.cmd` file extensions when validating application targets for `execFile`/`spawn` in cross-platform Electron handlers.
