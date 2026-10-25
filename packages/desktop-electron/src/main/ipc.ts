@@ -137,7 +137,9 @@ export function registerIpcHandlers(deps: Deps) {
     // Block dangerous interpreters that could be used for command injection
     const basename = app.split(/[/\\]/).pop()?.toLowerCase() ?? ""
     const blocklist = ["sh", "bash", "cmd", "cmd.exe", "node", "powershell", "powershell.exe", "wscript", "wscript.exe"]
-    if (blocklist.includes(basename)) throw new Error("Application not allowed")
+    if (blocklist.includes(basename) || basename.endsWith(".bat") || basename.endsWith(".cmd")) {
+      throw new Error("Application not allowed")
+    }
 
     if (!(await deps.checkAppExists(app))) throw new Error("Application not found")
 
