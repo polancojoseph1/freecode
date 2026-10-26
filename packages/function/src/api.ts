@@ -114,8 +114,11 @@ export class SyncServer extends DurableObject<Env> {
       prefix: `session/message/${sessionID}/`,
       limit: 1000,
     })
-    for (const item of list.objects) {
-      await this.env.Bucket.delete(item.key)
+    // ⚡ Bolt: Map object keys to an array and batch delete to avoid N+1 I/O overhead and
+    // prevent Cloudflare Workers subrequest limit crashes when deleting many items.
+    const keysToDelete = list.objects.map((item) => item.key)
+    if (keysToDelete.length > 0) {
+      await this.env.Bucket.delete(keysToDelete)
     }
     await this.env.Bucket.delete(`session/info/${sessionID}`)
     await this.ctx.storage.deleteAll()
