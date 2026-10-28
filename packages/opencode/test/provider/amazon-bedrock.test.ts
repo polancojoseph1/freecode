@@ -32,6 +32,7 @@ test("Bedrock: config region takes precedence over AWS_REGION env var", async ()
     init: async () => {
       Env.set("AWS_REGION", "us-east-1")
       Env.set("AWS_PROFILE", "default")
+      Env.set("AWS_ACCESS_KEY_ID", "test-key-id")
     },
     fn: async () => {
       const providers = await Provider.list()
@@ -57,6 +58,7 @@ test("Bedrock: falls back to AWS_REGION env var when no config region", async ()
     init: async () => {
       Env.set("AWS_REGION", "eu-west-1")
       Env.set("AWS_PROFILE", "default")
+      Env.set("AWS_ACCESS_KEY_ID", "test-key-id")
     },
     fn: async () => {
       const providers = await Provider.list()

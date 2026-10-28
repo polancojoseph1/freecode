@@ -106,7 +106,7 @@ export type RequestResult<
     >
   : Promise<
       TResponseStyle extends "data"
-        ? (TData extends Record<string, unknown> ? TData[keyof TData] : TData) | undefined
+        ? (TData extends Record<string, unknown> ? TData[keyof TData] : TData) | (TError extends Record<string, unknown> ? TError[keyof TError] : TError)
         : (
             | {
                 data: TData extends Record<string, unknown> ? TData[keyof TData] : TData
