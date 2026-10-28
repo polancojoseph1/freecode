@@ -137,7 +137,14 @@ export function registerIpcHandlers(deps: Deps) {
     // Block dangerous interpreters that could be used for command injection
     const basename = app.split(/[/\\]/).pop()?.toLowerCase() ?? ""
     const blocklist = ["sh", "bash", "cmd", "cmd.exe", "node", "powershell", "powershell.exe", "wscript", "wscript.exe"]
-    if (blocklist.includes(basename)) throw new Error("Application not allowed")
+
+    // Node.js implicitly executes .bat and .cmd files via cmd.exe on Windows.
+    // By blocking these extensions entirely, we prevent command injection bypasses
+    // that exploit this implicit shell handoff, since attackers could name their
+    // script "malicious.bat" which wouldn't match the exact "cmd.exe" blocklist.
+    if (blocklist.includes(basename) || basename.endsWith('.bat') || basename.endsWith('.cmd')) {
+      throw new Error("Application not allowed")
+    }
 
     if (!(await deps.checkAppExists(app))) throw new Error("Application not found")
 
