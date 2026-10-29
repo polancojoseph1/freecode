@@ -121,7 +121,9 @@ export function registerIpcHandlers(deps: Deps) {
     try {
       const parsed = new URL(url)
       if (["http:", "https:", "mailto:"].includes(parsed.protocol)) {
-        void shell.openExternal(url)
+        // Use the parsed and normalized URL string to prevent parser differential bypasses
+        // where the OS or Chromium interprets the raw string differently than the Node.js URL parser.
+        void shell.openExternal(parsed.toString())
       }
     } catch {
       // Invalid URL
