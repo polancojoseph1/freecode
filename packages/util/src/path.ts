@@ -1,21 +1,37 @@
+// ⚡ Bolt Performance Optimization:
+// Replaced regex overhead and intermediate array allocations (`replace`, `split`, `slice`, `join`)
+// with fast, native string methods (`endsWith`, `lastIndexOf`, `slice`, `replaceAll`).
+// This drastically improves execution speed for path parsing operations across the app.
+
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  let end = path.length
+  while (end > 0 && (path.endsWith("/", end) || path.endsWith("\\", end))) end--
+  if (end === 0) return ""
+  let lastSlash = path.lastIndexOf("/", end - 1)
+  let lastBackslash = path.lastIndexOf("\\", end - 1)
+  return path.slice((lastSlash > lastBackslash ? lastSlash : lastBackslash) + 1, end)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  let end = path.length
+  while (end > 1 && (path.endsWith("/", end) || path.endsWith("\\", end))) end--
+  if (end === 1 && (path === "/" || path === "\\")) return "/"
+  let lastSlash = path.lastIndexOf("/", end - 1)
+  let lastBackslash = path.lastIndexOf("\\", end - 1)
+  let maxSlash = lastSlash > lastBackslash ? lastSlash : lastBackslash
+  if (maxSlash === -1) return "/"
+  let dir = path.slice(0, maxSlash)
+  if (lastBackslash !== -1) dir = dir.replaceAll("\\", "/")
+  return dir + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  const lastDot = path.lastIndexOf(".")
+  if (lastDot === -1) return path
+  return path.slice(lastDot + 1)
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
