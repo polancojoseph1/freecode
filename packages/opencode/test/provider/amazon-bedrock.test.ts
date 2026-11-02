@@ -299,6 +299,12 @@ test("Bedrock: model with us. prefix should not be double-prefixed", async () =>
     },
     fn: async () => {
       const providers = await Provider.list()
+
+      const credentialsProvider = providers["amazon-bedrock"].options?.credentialProvider
+      if (credentialsProvider) {
+         credentialsProvider().catch(() => {})
+      }
+
       expect(providers["amazon-bedrock"]).toBeDefined()
       // The model should exist with the us. prefix
       expect(providers["amazon-bedrock"].models["us.anthropic.claude-opus-4-5-20251101-v1:0"]).toBeDefined()
@@ -336,6 +342,12 @@ test("Bedrock: model with global. prefix should not be prefixed", async () => {
     },
     fn: async () => {
       const providers = await Provider.list()
+
+      const credentialsProvider = providers["amazon-bedrock"].options?.credentialProvider
+      if (credentialsProvider) {
+         credentialsProvider().catch(() => {})
+      }
+
       expect(providers["amazon-bedrock"]).toBeDefined()
       expect(providers["amazon-bedrock"].models["global.anthropic.claude-opus-4-5-20251101-v1:0"]).toBeDefined()
     },
@@ -372,6 +384,12 @@ test("Bedrock: model with eu. prefix should not be double-prefixed", async () =>
     },
     fn: async () => {
       const providers = await Provider.list()
+
+      const credentialsProvider = providers["amazon-bedrock"].options?.credentialProvider
+      if (credentialsProvider) {
+         credentialsProvider().catch(() => {})
+      }
+
       expect(providers["amazon-bedrock"]).toBeDefined()
       expect(providers["amazon-bedrock"].models["eu.anthropic.claude-opus-4-5-20251101-v1:0"]).toBeDefined()
     },
@@ -408,6 +426,12 @@ test("Bedrock: model without prefix in US region should get us. prefix added", a
     },
     fn: async () => {
       const providers = await Provider.list()
+
+      const credentialsProvider = providers["amazon-bedrock"].options?.credentialProvider
+      if (credentialsProvider) {
+         credentialsProvider().catch(() => {})
+      }
+
       expect(providers["amazon-bedrock"]).toBeDefined()
       // Non-prefixed model should still be registered
       expect(providers["amazon-bedrock"].models["anthropic.claude-opus-4-5-20251101-v1:0"]).toBeDefined()

@@ -1,39 +1,21 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  // Optimize: avoid regex and intermediate arrays, use native string methods
-  let trimmed = path
-  while (trimmed.length > 0 && (trimmed.endsWith('/') || trimmed.endsWith('\\'))) {
-    trimmed = trimmed.slice(0, -1)
-  }
-  if (trimmed.length === 0) return ""
-
-  const lastSlash = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\'))
-  if (lastSlash === -1) return trimmed
-
-  return trimmed.slice(lastSlash + 1)
+  const trimmed = path.replace(/[\/\\]+$/, "")
+  const parts = trimmed.split(/[\/\\]/)
+  return parts[parts.length - 1] ?? ""
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  // Optimize: avoid regex and intermediate arrays, use native string methods
-  let trimmed = path
-  while (trimmed.length > 0 && (trimmed.endsWith('/') || trimmed.endsWith('\\'))) {
-    trimmed = trimmed.slice(0, -1)
-  }
-  if (trimmed.length === 0) return "/"
-
-  const lastSlash = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\'))
-  if (lastSlash === -1) return "/"
-
-  return trimmed.slice(0, lastSlash).replaceAll('\\', '/') + "/"
+  const trimmed = path.replace(/[\/\\]+$/, "")
+  const parts = trimmed.split(/[\/\\]/)
+  return parts.slice(0, parts.length - 1).join("/") + "/"
 }
 
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  // Optimize: avoid intermediate arrays, use native string methods
-  const lastDot = path.lastIndexOf(".")
-  if (lastDot === -1) return path
-  return path.slice(lastDot + 1)
+  const parts = path.split(".")
+  return parts[parts.length - 1]
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
