@@ -43,3 +43,7 @@ This change is safe and straightforward, resolving unnecessary CPU/IO blockage w
 ## 2025-03-24 - [Path Manipulation Utilities]
 **Learning:** Using regex and intermediate arrays (`split`) for basic string path manipulation (`getDirectory`, `getFilename`) creates unnecessary allocations and overhead. Additionally, manual string iteration with `charCodeAt` should be avoided to maintain readability.
 **Action:** Rely strictly on native string methods like `.endsWith()`, `.lastIndexOf()`, `.slice()`, and `.replaceAll()` when building fast string/path parsers. In tests, this yielded a 2x-3x speedup on hot-path string utility methods.
+
+## 2025-03-24 - [Amazon Bedrock Provider Init]
+**Learning:** Testing the AWS Bedrock provider triggers asynchronous AWS credentials resolution via `fromNodeProviderChain` under the hood. Since the credential resolution is not awaited internally by the AI SDK config setup during our testing process, it executes in the background and will throw unhandled rejections (e.g. `CredentialsProviderError`) when the CI test environment lacks valid AWS configuration. This unhandled background rejection causes subsequent tests in the suite to timeout.
+**Action:** When testing AWS provider configurations that rely on implicit credential resolution, explicitly extract the `credentialProvider` and `.catch(() => {})` its execution in the test runner to prevent dangling promise rejections from crashing or hanging the test suite.

@@ -5,6 +5,18 @@ import { tmpdir } from "../fixture/fixture"
 import { Ripgrep } from "../../src/file/ripgrep"
 
 describe("file.ripgrep", () => {
+  test("throws ENOENT on non-existent directory", async () => {
+    try {
+      for await (const _ of Ripgrep.files({ cwd: "/path/that/does/not/exist" })) {
+        // should not be reached
+      }
+      expect(true).toBe(false)
+    } catch (e: any) {
+      expect(e.code).toBe("ENOENT")
+      expect(e.message).toContain("No such file or directory")
+    }
+  })
+
   test("defaults to include hidden", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
