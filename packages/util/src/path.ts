@@ -1,15 +1,45 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+
+  // ⚡ Bolt: Fast path string operations - no regex, no intermediate array allocations
+  let end = path.length;
+  // Remove trailing slashes
+  while (end > 0 && (path.endsWith("/", end) || path.endsWith("\\", end))) {
+    end--;
+  }
+
+  if (end === 0) return "";
+
+  // Find last slash
+  const lastSlash = path.lastIndexOf("/", end - 1);
+  const lastBackslash = path.lastIndexOf("\\", end - 1);
+  const start = Math.max(lastSlash, lastBackslash);
+
+  return path.slice(start + 1, end);
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  if (path === "/") return "/"; // ⚡ Bolt: Preserve root path edge case
+
+  // ⚡ Bolt: Fast path string operations - no regex, no intermediate array allocations
+  let end = path.length;
+  // Remove trailing slashes
+  while (end > 0 && (path.endsWith("/", end) || path.endsWith("\\", end))) {
+    end--;
+  }
+
+  if (end === 0) return "/";
+
+  // Find last slash
+  const lastSlash = path.lastIndexOf("/", end - 1);
+  const lastBackslash = path.lastIndexOf("\\", end - 1);
+  const start = Math.max(lastSlash, lastBackslash);
+
+  if (start < 0) return "/";
+
+  const dir = path.slice(0, start);
+  return (dir.includes("\\") ? dir.replaceAll("\\", "/") : dir) + "/";
 }
 
 export function getFileExtension(path: string | undefined) {
