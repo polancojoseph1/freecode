@@ -1,15 +1,34 @@
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  // Optimized: use native string methods instead of regex `.replace` and `.split`
+  // to avoid intermediate array allocations and regex overhead.
+  let end = path.length;
+  while (end > 0 && (path.endsWith('/', end) || path.endsWith('\\', end))) {
+    end--;
+  }
+  if (end === 0) return "";
+  const lastForward = path.lastIndexOf('/', end - 1);
+  const lastBackward = path.lastIndexOf('\\', end - 1);
+  const lastSlash = lastForward > lastBackward ? lastForward : lastBackward;
+  return path.slice(lastSlash + 1, end);
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  // Optimized: use native string methods instead of regex `.replace` and `.split`
+  // to avoid intermediate array allocations and regex overhead.
+  let end = path.length;
+  while (end > 0 && (path.endsWith('/', end) || path.endsWith('\\', end))) {
+    end--;
+  }
+  // Preserve edge case: returning "/" for root paths
+  if (end === 0) return "/";
+  const lastForward = path.lastIndexOf('/', end - 1);
+  const lastBackward = path.lastIndexOf('\\', end - 1);
+  const lastSlash = lastForward > lastBackward ? lastForward : lastBackward;
+  // Preserve edge case: returning "/" for root paths without multiple parts
+  if (lastSlash === -1) return "/";
+  return path.slice(0, lastSlash).replaceAll('\\', '/') + "/";
 }
 
 export function getFileExtension(path: string | undefined) {
