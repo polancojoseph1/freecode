@@ -1,21 +1,32 @@
+// ⚡ Bolt Optimization: Use native string operations instead of regex/split to avoid array allocations
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+  let p = path.replaceAll("\\", "/")
+  while (p.length > 1 && p.endsWith("/")) {
+    p = p.slice(0, -1)
+  }
+  if (p === "/") return ""
+  const lastSlash = p.lastIndexOf("/")
+  return lastSlash === -1 ? p : p.slice(lastSlash + 1)
 }
 
+// ⚡ Bolt Optimization: Use native string operations instead of regex/split to avoid array allocations
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+  let p = path.replaceAll("\\", "/")
+  while (p.length > 1 && p.endsWith("/")) {
+    p = p.slice(0, -1)
+  }
+  if (p === "/") return "/"
+  const lastSlash = p.lastIndexOf("/")
+  return lastSlash === -1 ? "/" : p.slice(0, lastSlash) + "/"
 }
 
+// ⚡ Bolt Optimization: Use native string operations instead of regex/split to avoid array allocations
 export function getFileExtension(path: string | undefined) {
   if (!path) return ""
-  const parts = path.split(".")
-  return parts[parts.length - 1]
+  const lastDot = path.lastIndexOf(".")
+  return lastDot === -1 ? path : path.slice(lastDot + 1)
 }
 
 export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
