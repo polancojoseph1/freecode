@@ -24,3 +24,7 @@
 **Vulnerability:** Found a command injection vulnerability where untrusted arguments derived from pre-resolved application paths were evaluated via `execFile` or `spawn` inside Electron IPC handlers.
 **Learning:** Pre-resolving paths in the frontend (renderer) and passing them back to backend processes opens the door to arbitrary command execution since the path isn't fully sanitized and its integrity isn't verified in the backend.
 **Prevention:** Handlers should never trust pre-resolved execution paths or names. Send raw application names from the frontend and apply a robust blocklist combined with existence checks and backend-only resolution inside the main process before invoking subprocess execution APIs.
+## 2025-05-24 - Implicit Command Execution via Batch Files
+**Vulnerability:** Node.js `execFile` and `spawn` on Windows implicitly use `cmd.exe` when executing `.bat` or `.cmd` files. In `packages/desktop-electron/src/main/ipc.ts`, an exact-match blocklist was used to prevent command injection, but failed to block files ending in `.bat` or `.cmd`.
+**Learning:** Exact-match blocklists are insufficient when APIs exhibit implicit shell-like behavior based on file extensions.
+**Prevention:** Explicitly validate and block `.bat` and `.cmd` extensions (e.g., using `basename.endsWith('.bat')`) when passing untrusted paths or application names to execution APIs on Windows, rather than relying solely on exact-match blocklists.
