@@ -1,15 +1,38 @@
+// ⚡ Bolt: Optimized path utilities using strictly native string methods
+// to avoid intermediate array allocations and regex overhead.
+
 export function getFilename(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts[parts.length - 1] ?? ""
+
+  let trimmed = path
+  while (trimmed.length > 0 && (trimmed.endsWith('/') || trimmed.endsWith('\\'))) {
+    trimmed = trimmed.slice(0, -1)
+  }
+  if (!trimmed) return ""
+
+  const normalized = trimmed.replaceAll('\\', '/')
+  const lastSlash = normalized.lastIndexOf('/')
+
+  return lastSlash === -1 ? trimmed : normalized.slice(lastSlash + 1)
 }
 
 export function getDirectory(path: string | undefined) {
   if (!path) return ""
-  const trimmed = path.replace(/[\/\\]+$/, "")
-  const parts = trimmed.split(/[\/\\]/)
-  return parts.slice(0, parts.length - 1).join("/") + "/"
+
+  let trimmed = path
+  while (trimmed.length > 1 && (trimmed.endsWith('/') || trimmed.endsWith('\\'))) {
+    trimmed = trimmed.slice(0, -1)
+  }
+
+  // Explicitly preserve the edge case returning "/" for root paths
+  if (trimmed === '/' || trimmed === '\\') return '/'
+
+  const normalized = trimmed.replaceAll('\\', '/')
+  const lastSlash = normalized.lastIndexOf('/')
+
+  if (lastSlash === -1) return '/'
+
+  return normalized.slice(0, lastSlash + 1)
 }
 
 export function getFileExtension(path: string | undefined) {
