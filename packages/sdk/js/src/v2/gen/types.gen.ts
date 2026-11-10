@@ -390,9 +390,6 @@ export type SubtaskPart = {
     modelID: string
   }
   command?: string
-  parts?: Array<{
-    [key: string]: unknown
-  }>
 }
 
 export type ReasoningPart = {
@@ -1059,7 +1056,7 @@ export type PermissionConfig =
       glob?: PermissionRuleConfig
       grep?: PermissionRuleConfig
       list?: PermissionRuleConfig
-      shell?: PermissionRuleConfig
+      bash?: PermissionRuleConfig
       task?: PermissionRuleConfig
       external_directory?: PermissionRuleConfig
       todowrite?: PermissionActionConfig
@@ -1167,13 +1164,11 @@ export type ProviderConfig = {
       cost?: {
         input: number
         output: number
-        reasoning?: number
         cache_read?: number
         cache_write?: number
         context_over_200k?: {
           input: number
           output: number
-          reasoning?: number
           cache_read?: number
           cache_write?: number
         }
@@ -1583,7 +1578,6 @@ export type Model = {
   cost: {
     input: number
     output: number
-    reasoning?: number
     cache: {
       read: number
       write: number
@@ -1591,7 +1585,6 @@ export type Model = {
     experimentalOver200K?: {
       input: number
       output: number
-      reasoning?: number
       cache: {
         read: number
         write: number
@@ -1768,9 +1761,6 @@ export type SubtaskPartInput = {
     modelID: string
   }
   command?: string
-  parts?: Array<{
-    [key: string]: unknown
-  }>
 }
 
 export type ProviderAuthMethod = {
@@ -3954,13 +3944,11 @@ export type ProviderListResponses = {
           cost?: {
             input: number
             output: number
-            reasoning?: number
             cache_read?: number
             cache_write?: number
             context_over_200k?: {
               input: number
               output: number
-              reasoning?: number
               cache_read?: number
               cache_write?: number
             }
